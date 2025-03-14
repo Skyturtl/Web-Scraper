@@ -78,3 +78,6 @@ def token_stop_stem(text):
   stemmer = PorterStemmer()
   stems = [stemmer.stem(token) for token in tokens]
   return stems
+
+def get_all_words():
+  return all_words

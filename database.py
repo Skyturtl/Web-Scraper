@@ -16,7 +16,6 @@ def execute_query(connection, query):
   try:
     cursor.execute(query)
     connection.commit()
-    print("Query executed successfully")
   except Error as e:
     print(f"The error '{e}' occurred")
 
@@ -28,7 +27,6 @@ def clear_database(connection):
     cursor.execute("DROP TABLE IF EXISTS child_links")
     cursor.execute("DROP TABLE IF EXISTS parent_links")
     connection.commit()
-    print("Database cleared successfully")
   except Error as e:
     print(f"The error '{e}' occurred")
     
@@ -37,33 +35,29 @@ def add_link(connection, title, url, last_mod_date, size):
   try:
     cursor.execute(f"INSERT INTO links (title, url, last_mod_date, size) VALUES ('{title}', '{url}', '{last_mod_date}', {size})")
     connection.commit()
-    print("Link added successfully")
   except Error as e:
     print(f"The error '{e}' occurred")
 
-def add_keyword(connection, parent_group, link_id, keyword):
+def add_keyword(connection, parent_group, keyword):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO keywords (parent_group, link_id, keyword) VALUES ({parent_group}, {link_id}, '{keyword}')")
+    cursor.execute(f"INSERT INTO keywords (parent_group, keyword) VALUES ({parent_group}, '{keyword}')")
     connection.commit()
-    print("Keyword added successfully")
   except Error as e:
     print(f"The error '{e}' occurred")
     
-def add_child_link(connection, parent_group, child_index, url):
+def add_child_link(connection, parent_group, url):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO child_links (parent_group, child_index, url) VALUES ({parent_group}, {child_index}, '{url}')")
+    cursor.execute(f"INSERT INTO child_links (parent_group, url) VALUES ({parent_group}, '{url}')")
     connection.commit()
-    print("Child link added successfully")
   except Error as e:
     print(f"The error '{e}' occurred")
     
-def add_parent_link(connection, parent_group, parent_index, url):
+def add_parent_link(connection, parent_group, url):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO parent_links (parent_group, parent_index, url) VALUES ({parent_group}, {parent_index}, '{url}')")
+    cursor.execute(f"INSERT INTO parent_links (parent_group, url) VALUES ({parent_group}, '{url}')")
     connection.commit()
-    print("Parent link added successfully")
   except Error as e:
     print(f"The error '{e}' occurred")

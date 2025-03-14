@@ -16,6 +16,7 @@ def execute_query(connection, query):
   try:
     cursor.execute(query)
     connection.commit()
+    print("Query executed successfully")
   except Error as e:
     print(f"The error '{e}' occurred")
 
@@ -26,6 +27,7 @@ def clear_database(connection):
     cursor.execute("DROP TABLE IF EXISTS keywords")
     cursor.execute("DROP TABLE IF EXISTS child_links")
     cursor.execute("DROP TABLE IF EXISTS parent_links")
+    cursor.execute("DROP TABLE IF EXISTS keywords_freq")
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
@@ -38,10 +40,18 @@ def add_link(connection, title, url, last_mod_date, size):
   except Error as e:
     print(f"The error '{e}' occurred")
 
-def add_keyword(connection, parent_group, keyword):
+def add_keyword(connection, keyword):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO keywords (parent_group, keyword) VALUES ({parent_group}, '{keyword}')")
+    cursor.execute(f"INSERT INTO keywords (keyword) VALUES ('{keyword}')")
+    connection.commit()
+  except Error as e:
+    print(f"The error '{e}' occurred")
+    
+def add_keyword_freq(connection, keyword, parent_group, frequency):
+  cursor = connection.cursor()
+  try:
+    cursor.execute(f"INSERT INTO keywords_freq (keyword, parent_group, frequency) VALUES ('{keyword}', {parent_group}, {frequency})")
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")

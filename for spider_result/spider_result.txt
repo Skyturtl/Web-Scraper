@@ -1,0 +1,114 @@
+Test page
+https://www.cse.ust.hk/~kwtleung/COMP4321/testpage.htm
+Tue, 16 May 2023 05:03:16 GMT, 221 bytes
+Keywords: 
+Child Links:
+--------------------------------------------------
+CSE department of HKUST
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm
+Tue, 16 May 2023 05:03:16 GMT, 100 bytes
+Keywords: 
+Child Links:
+--------------------------------------------------
+News
+https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm
+Tue, 16 May 2023 05:03:16 GMT, 49 bytes
+Keywords: 
+Child Links:
+--------------------------------------------------
+books
+https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm
+Tue, 16 May 2023 05:03:16 GMT, 221 bytes
+Keywords: postgradu 9; program 8; admiss 8; comput 8; applic 7; scienc 7; requir 6; student 6; english 6; admit 5; 
+Child Links:
+../ust_cse.htm
+--------------------------------------------------
+PG
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse/PG.htm
+Tue, 16 May 2023 05:03:46 GMT, 2810 bytes
+Keywords: program 16; comput 13; scienc 7; student 7; engin 6; studi 6; univers 6; depart 5; hkust 5; train 5; 
+Child Links:
+../ust_cse.htm
+--------------------------------------------------
+UG
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse/UG.htm
+Tue, 16 May 2023 05:03:46 GMT, 3212 bytes
+Keywords: bbc 2; news 2; fifth 1; nest 1; rare 1; bird 1; project 1; mp 1; urg 1; bt 1; 
+Child Links:
+bbc1.htm
+bbc2.htm
+bbc3.htm
+../news.htm
+--------------------------------------------------
+BBC news
+https://www.cse.ust.hk/~kwtleung/COMP4321/news/bbc.htm
+Tue, 16 May 2023 05:03:44 GMT, 138 bytes
+Keywords: cnn 2; news 2; sauerkraut 1; capit 1; sweet 1; accordion 1; warm 1; caus 1; econom 1; chao 1; 
+Child Links:
+cnn1.htm
+cnn2.htm
+../news.htm
+--------------------------------------------------
+CNN news
+https://www.cse.ust.hk/~kwtleung/COMP4321/news/cnn.htm
+Tue, 16 May 2023 05:03:44 GMT, 122 bytes
+Keywords: retriev 5; inform 3; descript 3; keyword 2; book 2; main 2; topic 2; relat 2; chapter 2; ratio 2; 
+Child Links:
+../books.htm
+--------------------------------------------------
+book1
+https://www.cse.ust.hk/~kwtleung/COMP4321/books/book1.htm
+Tue, 16 May 2023 05:03:16 GMT, 1335 bytes
+Keywords: data 11; base 9; inform 5; gener 4; consid 4; machine-read 3; bibliograph 3; retriev 3; chapter 2; continu 2; 
+Child Links:
+../books.htm
+--------------------------------------------------
+book2
+https://www.cse.ust.hk/~kwtleung/COMP4321/books/book2.htm
+Tue, 16 May 2023 05:03:16 GMT, 1770 bytes
+Keywords: relev 6; term 6; system 5; mathemat 4; mean 3; book 2; report 2; inform 2; document 2; doctrin 2; 
+Child Links:
+../books.htm
+--------------------------------------------------
+book3
+https://www.cse.ust.hk/~kwtleung/COMP4321/books/book3.htm
+Tue, 16 May 2023 05:03:16 GMT, 1654 bytes
+Keywords: cse 2; depart 2; hkust 2; admiss 2; pg 1; ug 1; main 1; 
+Child Links:
+ust_cse/PG.htm
+ust_cse/UG.htm
+testpage.htm
+--------------------------------------------------
+BBC news1
+https://www.cse.ust.hk/~kwtleung/COMP4321/news/bbc1.htm
+Tue, 16 May 2023 05:03:44 GMT, 1339 bytes
+Keywords: nest 6; kite 5; bird 4; success 4; project 3; chick 3; fifth 2; rare 2; england 2; northern 2; 
+Child Links:
+--------------------------------------------------
+BBC news2
+https://www.cse.ust.hk/~kwtleung/COMP4321/news/bbc2.htm
+Tue, 16 May 2023 05:03:44 GMT, 1822 bytes
+Keywords: bt 8; goonhilli 6; site 6; mp 3; georg 3; oper 3; job 3; benefit 3; urg 2; commit 2; 
+Child Links:
+--------------------------------------------------
+BBC news3
+https://www.cse.ust.hk/~kwtleung/COMP4321/news/bbc3.htm
+Tue, 16 May 2023 05:03:44 GMT, 2910 bytes
+Keywords: west 10; ham 10; sheringham 7; minut 7; blackburn 6; goal 5; cross 5; header 4; time 4; friedel 4; 
+Child Links:
+--------------------------------------------------
+CNN news1
+https://www.cse.ust.hk/~kwtleung/COMP4321/news/cnn1.htm
+Tue, 16 May 2023 05:03:44 GMT, 3852 bytes
+Keywords: new 2; news 2; bbc 1; cnn 1; main 1; 
+Child Links:
+news/bbc.htm
+news/cnn.htm
+testpage.htm
+--------------------------------------------------
+CNN news2
+https://www.cse.ust.hk/~kwtleung/COMP4321/news/cnn2.htm
+Tue, 16 May 2023 05:03:44 GMT, 5344 bytes
+Keywords: accordion 13; wishek 7; student 7; play 7; welk 6; wolff 6; instrument 6; german 5; sauerkraut 4; lawrenc 4; 
+Child Links:
+--------------------------------------------------

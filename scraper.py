@@ -29,6 +29,7 @@ def spider(endpoint, all_links, parent, max_pages):
   #sets up a dictonary of endpoints and a dictonary for each endpoint containing information
   all_links[endpoint] = {}
   all_links[endpoint]['title'] = soup.title.string if soup.title else "No title"
+  all_links[endpoint]['stem_title'] = " ".join(token_stop_stem(all_links[endpoint]['title'])) # Tokenize, remove stopwords, and stem the title
   all_links[endpoint]['url'] = url 
   all_links[endpoint]['last_mod_date'] = page.headers['Last-Modified'] if 'Last-Modified' in page.headers else "No last modified date"
   all_links[endpoint]['size'] = len(page.content)

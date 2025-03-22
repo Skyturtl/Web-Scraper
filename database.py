@@ -31,14 +31,14 @@ def clear_database(connection):
   except Error as e:
     print(f"The error '{e}' occurred")
     
-def add_link(connection, title, url, last_mod_date, size):
+def add_link(connection, title, stem_title, url, last_mod_date, size):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO links (title, url, last_mod_date, size) VALUES ('{title}', '{url}', '{last_mod_date}', {size})")
+    cursor.execute(f"INSERT INTO links (title, stem_title, url, last_mod_date, size) VALUES ('{title}', '{stem_title}', '{url}', '{last_mod_date}', {size})")
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
-    print(f"INSERT INTO links (title, url, last_mod_date, size) VALUES ('{title}', '{url}', '{last_mod_date}', {size})")
+    print(f"INSERT INTO links (title, stem_title, url, last_mod_date, size) VALUES ('{title}', '{stem_title}', '{url}', '{last_mod_date}', {size})")
 
 def add_keyword(connection, keyword):
   cursor = connection.cursor()

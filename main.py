@@ -6,6 +6,7 @@ create_links_table = """
 CREATE TABLE IF NOT EXISTS links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT,
+  stem_title TEXT,
   url TEXT NOT NULL,
   last_mod_date TEXT,
   size INTEGER
@@ -71,7 +72,8 @@ for word in all_words:
 for endpoint, data in all_links.items():
   if data:
     title = data['title'].replace("'", "''")
-    add_link(connection, title, data['url'], data['last_mod_date'], data['size'])
+    stem_title = data['stem_title'].replace("'", "''")
+    add_link(connection, title, stem_title, data['url'], data['last_mod_date'], data['size'])
     
     parent_group = data['index']
     for link in data['links']:

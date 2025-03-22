@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from collections import deque # fastest way to implement a queue in python
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
+import nltk
 
 # Download the punkt and punkt_tab modules for nltk
 # This is only needed if you haven't downloaded the modules yet
@@ -19,8 +20,6 @@ all_words = set()
 # Main function for scraping the website
 def spider(endpoint, all_links, parent, max_pages):
   global indexed_pages
-  if endpoint == "Movie.htm":
-    return
   
   # Getting the page content url is the base url + endpoint
   url = "https://www.cse.ust.hk/~kwtleung/COMP4321/" + endpoint
@@ -32,7 +31,7 @@ def spider(endpoint, all_links, parent, max_pages):
   all_links[endpoint]['title'] = soup.title.string if soup.title else "No title"
   all_links[endpoint]['url'] = url 
   all_links[endpoint]['last_mod_date'] = page.headers['Last-Modified'] if 'Last-Modified' in page.headers else "No last modified date"
-  all_links[endpoint]['size'] = len(soup.get_text())
+  all_links[endpoint]['size'] = len(page.content)
   if 'parent' not in all_links[endpoint]:                               # If the endpoint has no parent, create an empty list
     all_links[endpoint]['parent'] = []
   if parent != "":
@@ -40,7 +39,7 @@ def spider(endpoint, all_links, parent, max_pages):
   all_links[endpoint]['keywords'] = token_stop_stem(soup.get_text())    # Tokenize, remove stopwords, and stem the text    
   all_words.update(all_links[endpoint]['keywords'])                     # Add the keywords to the set of all words
   all_links[endpoint]['links'] = [link['href'] for link in soup.find_all('a', href=True)]     # Get all the links on the page  
-  all_links[endpoint]['index'] = indexed_pages                          # Index the page (used for the database later)         
+  all_links[endpoint]['index'] = indexed_pages + 1                      # Index the page (used for the database later)         
   indexed_pages += 1
   
   # Add the links to the queue
@@ -68,6 +67,9 @@ def spider(endpoint, all_links, parent, max_pages):
 def token_stop_stem(text):
   # Tokenize the text
   tokens = word_tokenize(text)
+  
+  # Remove all punctuation
+  tokens = [token for token in tokens if token.isalnum()]
   
   # Remove the stopwords
   with open('stopwords.txt', 'r') as file:

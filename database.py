@@ -16,7 +16,6 @@ def execute_query(connection, query):
   try:
     cursor.execute(query)
     connection.commit()
-    print("Query executed successfully")
   except Error as e:
     print(f"The error '{e}' occurred")
 
@@ -39,6 +38,7 @@ def add_link(connection, title, url, last_mod_date, size):
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
+    print(f"INSERT INTO links (title, url, last_mod_date, size) VALUES ('{title}', '{url}', '{last_mod_date}', {size})")
 
 def add_keyword(connection, keyword):
   cursor = connection.cursor()
@@ -47,6 +47,7 @@ def add_keyword(connection, keyword):
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
+    print(f"INSERT INTO keywords (keyword) VALUES ('{keyword}')")
     
 def add_keyword_freq(connection, keyword, parent_group, frequency):
   cursor = connection.cursor()
@@ -55,6 +56,7 @@ def add_keyword_freq(connection, keyword, parent_group, frequency):
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
+    print(f"INSERT INTO keywords_freq (keyword, parent_group, frequency) VALUES ('{keyword}', {parent_group}, {frequency})")
     
 def add_child_link(connection, parent_group, url):
   cursor = connection.cursor()
@@ -63,6 +65,7 @@ def add_child_link(connection, parent_group, url):
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
+    print(f"INSERT INTO child_links (parent_group, url) VALUES ({parent_group}, '{url}')")
     
 def add_parent_link(connection, parent_group, url):
   cursor = connection.cursor()
@@ -71,3 +74,4 @@ def add_parent_link(connection, parent_group, url):
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
+    print(f"INSERT INTO parent_links (parent_group, url) VALUES ({parent_group}, '{url}')")

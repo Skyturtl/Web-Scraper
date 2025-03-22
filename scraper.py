@@ -3,14 +3,13 @@ from bs4 import BeautifulSoup
 from collections import deque # fastest way to implement a queue in python
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
-import nltk
 
 # Download the punkt and punkt_tab modules for nltk
 # This is only needed if you haven't downloaded the modules yet
 # Uncomment the following lines to download the modules
-# import nltk
-# nltk.download('punkt')
-# nltk.download('punkt_tab')
+import nltk
+nltk.download('punkt')
+nltk.download('punkt_tab')
 
 # Set up global variables
 indexed_pages = 0
@@ -69,7 +68,7 @@ def token_stop_stem(text):
   # Tokenize the text
   tokens = word_tokenize(text)
   
-  # Remove all punctuation
+  # Remove all symbols
   tokens = [token for token in tokens if token.isalnum()]
   
   # Remove the stopwords

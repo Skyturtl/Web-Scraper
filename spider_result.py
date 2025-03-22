@@ -55,9 +55,20 @@ def generate_spider_result(links_data, keywords_data, child_links_data):
             # Write child links
             file.write("Child Links:\n")
             child_count = 0
+            parent_endpoint = url.replace("https://www.cse.ust.hk/~kwtleung/COMP4321/", "")
             for child in child_links_data:
                 if child[0] == page_id and child_count < 10:
-                    file.write(f"{child[1]}\n")
+                    next_endpoint = child[1]
+                    if "/" in child[1]:
+                        if child[1][0] == ".":
+                            if len(parent_endpoint.split("/")) <= 2:
+                                next_endpoint = next_endpoint[3:]
+                            else:
+                                next_endpoint = "/".join(parent_endpoint.split("/")[:-2]) + next_endpoint[3:]
+                        else:
+                            if "/" in parent_endpoint:
+                                next_endpoint = "/".join(parent_endpoint.split("/")[:-1]) + "/" + next_endpoint
+                    file.write(f"https://www.cse.ust.hk/~kwtleung/COMP4321/{next_endpoint}\n")
                     child_count += 1
             
             file.write("-" * 50 + "\n")  # Separator line

@@ -15,7 +15,7 @@ def fetch_page_data(connection):
     cursor = connection.cursor()
     
     # Fetch all links data
-    cursor.execute("SELECT id, title, url, last_mod_date, size FROM links")
+    cursor.execute("SELECT id, stem_title, url, last_mod_date, size FROM links")
     links_data = cursor.fetchall()
     
     # Fetch top 10 keywords and their frequencies grouped by parent group
@@ -36,10 +36,10 @@ def fetch_page_data(connection):
 def generate_spider_result(links_data, keywords_data, child_links_data):
     with open("spider_result.txt", "w") as file:
         for link in links_data:
-            page_id, title, url, last_mod_date, size = link
+            page_id, stem_title, url, last_mod_date, size = link
             
             # Write page details
-            file.write(f"Page Title: {title}\n")
+            file.write(f"Page Title: {stem_title}\n")
             file.write(f"URL: {url}\n")
             file.write(f"Last Modified: {last_mod_date}, Size: {size} bytes\n")
             

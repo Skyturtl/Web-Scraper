@@ -1,9 +1,20 @@
 # Web-Scraper
 For HKUST class COMP4321
+By: William Chen, Po Wa Ho, Fung Ming Sze
 
-Prerequisites:**Python 3.x,Required Python libraries(requests,beautifulsoup4,nltk,sqlite3),Internet connection (for downloading NLTK tokenizer)**
-
-Project Structure:**main.py,scraper.py,database.py,stopwords.txt,scraper.db,spider_result.py,spider_result.txt**
+## Prerequisites:
+- Python 3.x
+- Required Python libraries(requests,beautifulsoup4,nltk,sqlite3)
+- Internet connection (for downloading NLTK tokenizer)
+  
+## Project Structure: 
+- main.py
+- scraper.py
+- database.py
+- stopwords.txt
+- scraper.db
+- spider_result.py
+- spider_result.txt
 
 To build and execute the web crawler, start by setting up the database. First, ensure that `scraper.db` does not exist if you want a fresh run. Then, run the command **`python main.py`** to initialize the database and start the web crawler. This command will create the necessary tables in the SQLite database, begin crawling from the specified seed URL (defined in `main.py`), and store the extracted data, including links, keywords, and parent-child relationships, in `scraper.db`.
 

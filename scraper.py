@@ -52,18 +52,18 @@ def spider(endpoint, all_links, parent, max_pages):
   # Scraping the next page while the queue isn't empty and less than max_pages
   # Also updating the endpoint since the href's are relative
   while queue and indexed_pages < max_pages:
-    next_endpoint, parent = queue.popleft()
+    next_endpoint, parent_endpoint = queue.popleft()
     
     if "/" in next_endpoint:                    # If the next endpoint has a directory change
       if next_endpoint[0] == ".":               # If the next endpoint goes up a directory
-        if len(parent.split("/")) <= 2:         # If there is only one previous directory
+        if len(parent_endpoint.split("/")) <= 2:         # If there is only one previous directory
           next_endpoint = next_endpoint[3:]     # Remove the "../" from the next endpoint
         else:
-          next_endpoint = "/".join(parent.split("/")[:-2]) + next_endpoint[3:]    # Remove the "../" from the next endpoint and go up a directory
+          next_endpoint = "/".join(parent_endpoint.split("/")[:-2]) + next_endpoint[3:]    # Remove the "../" from the next endpoint and go up a directory
     else:
-      if "/" in parent:                         # If the parent has a directory change  
-        next_endpoint = "/".join(parent.split("/")[:-1]) + "/" + next_endpoint    # Add the parent directory to the next endpoint
-    spider(next_endpoint, all_links, parent, max_pages)   # Recursively call spider with the new endpoint
+      if "/" in parent_endpoint:                         # If the parent_endpoint has a directory change  
+        next_endpoint = "/".join(parent_endpoint.split("/")[:-1]) + "/" + next_endpoint    # Add the parent_endpoint directory to the next endpoint
+    spider(next_endpoint, all_links, parent_endpoint, max_pages)   # Recursively call spider with the new endpoint
 
 def token_stop_stem(text):
   # Tokenize the text

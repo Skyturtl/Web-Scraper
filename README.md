@@ -3,7 +3,7 @@ For HKUST class COMP4321 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
 
 ## Prerequisites:
 - Python 3.x
-- Required Python libraries(requests,beautifulsoup4,nltk,sqlite3)
+- Required Python libraries(requests, beautifulsoup4, nltk, sqlite3)
 - Internet connection (for downloading NLTK tokenizer)
   
 ## Project Structure: 
@@ -27,10 +27,14 @@ For HKUST class COMP4321 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
 ## How to run:
 To build and execute the web crawler, start by setting up the database. 
 1. Download all the necessary libraries as listed in [Prerequisites](#prerequisites)
-2. Ensure that `scraper.db` and `spider_result.txt` does not exist if you want a fresh run. 
+   1. Can be done using **`pip install <library_name>`**
+3. Ensure that `scraper.db` and `spider_result.txt` does not exist if you want a fresh run. 
    1. This is only for clairty purposes, the table is cleared each run and the text file is overwritten
-3. Run the command **`python main.py`** to initialize the database and start the web crawler. 
+4. Run the command **`python main.py`** to initialize the database and start the web crawler. 
    1. This command will create the necessary tables in the SQLite database, begin crawling from the specified seed URL (defined in `main.py`), and store the extracted data, including links, keywords, and parent-child relationships, in `scraper.db`.
-4. Run **`python spider_result.py`**
+5. Run **`python spider_result.py`**
    1. After we have indexed all the necessary pages and generated a corresponding database, we need to generate the spider result. This command will fetch the indexed data from the database and create a formatted `spider_result.txt` file that contains the pages, keywords, and child links.
-5. Finally, you can view the output. The `scraper.db` file will contain the indexed data, while the `spider_result.txt` file will hold the final results in the required format.
+6. Finally, you can view the output. The `scraper.db` file will contain the indexed data, while the `spider_result.txt` file will hold the final results in the required format.
+
+## Specifications:
+May need to use `py -m pip install <library>` and `py <file_name.py>` instead of `python` because of PATH issues. 

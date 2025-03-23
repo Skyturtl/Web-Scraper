@@ -16,7 +16,7 @@ For HKUST class COMP4321 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
 - spider_result.txt
 
 ## Design Choices:
-- The database schema and design is explained in the document `database.docx`.
+- The database schema and design is explained in the document `Database_design.docx`.
 - The pages are crawled through based on a priority queue/bfs implementation.
 - Symbols were removed after tokenizing the content of the page because it was creating problems with the SQL queries as well as having many symbols to have to sort through, may revisit this problem in the second phase.
 - Numbers were kept as some have a deeper meaning such as year or as a page title.

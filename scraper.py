@@ -1,85 +1,151 @@
 import requests
+import re
 from bs4 import BeautifulSoup
-from collections import deque # fastest way to implement a queue in python
+from collections import deque, defaultdict
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
+import aiohttp
+import asyncio
 
 # Download the punkt and punkt_tab modules for nltk
-# This is only needed if you haven't downloaded the modules yet
-# Uncomment the following lines to download the modules
-import nltk
-nltk.download('punkt')
-nltk.download('punkt_tab')
+# import nltk
+# nltk.download('punkt')
+# nltk.download('punkt_tab')
 
 # Set up global variables
 indexed_pages = 0
 queue = deque()
-all_words = set()
+visited_links = set()  # Set to keep track of visited links
+inverted_index_body = defaultdict(lambda: defaultdict(int))  # Inverted index for body text
+inverted_index_title = defaultdict(lambda: defaultdict(int))  # Inverted index for titles
 
-# Main function for scraping the website
-def spider(endpoint, all_links, parent, max_pages):
-  global indexed_pages
-  
-  # Getting the page content url is the base url + endpoint
-  url = "https://www.cse.ust.hk/~kwtleung/COMP4321/" + endpoint
-  page = requests.get(url)
-  soup = BeautifulSoup(page.content, 'html.parser')
-  
-  #sets up a dictonary of endpoints and a dictonary for each endpoint containing information
-  all_links[endpoint] = {}
-  all_links[endpoint]['title'] = soup.title.string if soup.title else "No title"
-  all_links[endpoint]['stem_title'] = " ".join(token_stop_stem(all_links[endpoint]['title'])) # Tokenize, remove stopwords, and stem the title
-  all_links[endpoint]['url'] = url 
-  all_links[endpoint]['last_mod_date'] = page.headers['Last-Modified'] if 'Last-Modified' in page.headers else "No last modified date"
-  all_links[endpoint]['size'] = len(page.content)
-  if 'parent' not in all_links[endpoint]:                               # If the endpoint has no parent, create an empty list
-    all_links[endpoint]['parent'] = []
-  if parent != "":
-    all_links[endpoint]['parent'].append(parent)
-  all_links[endpoint]['keywords'] = token_stop_stem(soup.get_text())    # Tokenize, remove stopwords, and stem the text    
-  all_words.update(all_links[endpoint]['keywords'])                     # Add the keywords to the set of all words
-  all_links[endpoint]['links'] = [link['href'] for link in soup.find_all('a', href=True)]     # Get all the links on the page  
-  all_links[endpoint]['index'] = indexed_pages + 1                      # Index the page (used for the database later)         
-  indexed_pages += 1
-  
-  # Add the links to the queue
-  for link in all_links[endpoint]['links']:
-    if link not in all_links:
-      all_links[link] = None
-      queue.append([link, endpoint])
-    
-  # Scraping the next page while the queue isn't empty and less than max_pages
-  # Also updating the endpoint since the href's are relative
-  while queue and indexed_pages < max_pages:
-    next_endpoint, parent_endpoint = queue.popleft()
-    
-    if "/" in next_endpoint:                    # If the next endpoint has a directory change
-      if next_endpoint[0] == ".":               # If the next endpoint goes up a directory
-        if len(parent_endpoint.split("/")) <= 2:         # If there is only one previous directory
-          next_endpoint = next_endpoint[3:]     # Remove the "../" from the next endpoint
-        else:
-          next_endpoint = "/".join(parent_endpoint.split("/")[:-2]) + next_endpoint[3:]    # Remove the "../" from the next endpoint and go up a directory
-    else:
-      if "/" in parent_endpoint:                         # If the parent_endpoint has a directory change  
-        next_endpoint = "/".join(parent_endpoint.split("/")[:-1]) + "/" + next_endpoint    # Add the parent_endpoint directory to the next endpoint
-    spider(next_endpoint, all_links, parent_endpoint, max_pages)   # Recursively call spider with the new endpoint
+# Preload stopwords and compile regex
+with open('stopwords.txt', 'r') as file:
+  STOPWORDS = set(file.read().split())
+ALNUM_REGEX = re.compile(r'\w+')
 
 def token_stop_stem(text):
-  # Tokenize the text
-  tokens = word_tokenize(text)
-  
-  # Remove all symbols
-  tokens = [token for token in tokens if token.isalnum()]
-  
-  # Remove the stopwords
-  with open('stopwords.txt', 'r') as file:
-    stopwords = set(file.read().split())
-  tokens = [token for token in tokens if token.lower() not in stopwords]
-  
-  # Stem the tokens
-  stemmer = PorterStemmer()
-  stems = [stemmer.stem(token) for token in tokens]
-  return stems
+  tokens = ALNUM_REGEX.findall(text)  # Faster tokenization
+  tokens = [token for token in tokens if token.lower() not in STOPWORDS]  # Remove stopwords
+  stemmer = PorterStemmer()  # Stem the tokens
+  return [stemmer.stem(token) for token in tokens]
 
-def get_all_words():
-  return all_words
+def update_inverted_index(keywords, endpoint, inverted_index):
+  # Update the inverted index with the current page's keywords
+  for stem in keywords:
+    if stem not in inverted_index:
+      inverted_index[stem] = defaultdict(int)  # Create a new dictionary for this stem if it doesn't exist
+    inverted_index[stem][endpoint] += 1  # Increment the term frequency for this endpoint
+
+def get_inverted_index_body():
+  return inverted_index_body  # Function to retrieve the inverted index for body text
+
+def get_inverted_index_title():
+  return inverted_index_title  # Function to retrieve the inverted index for titles
+
+async def fetch_page(session, url):
+  async with session.get(url) as response:
+    raw_content = await response.read()
+    content = raw_content.decode('windows-1252', errors='replace')
+    return content, response.headers
+
+async def spider_async(endpoint, all_links, parent, max_pages):
+  global indexed_pages
+  global queue
+
+  base_url = "https://www.cse.ust.hk/~kwtleung/COMP4321/"
+  async with aiohttp.ClientSession() as session:
+    while queue and indexed_pages < max_pages:
+      next_endpoint, parent_endpoint = queue.popleft()
+      url = base_url + next_endpoint
+
+      try:
+        page_content, headers = await fetch_page(session, url)
+        soup = BeautifulSoup(page_content, 'html.parser')
+
+        # Process the page (similar to the original spider function)
+        all_links[next_endpoint] = {}
+        all_links[next_endpoint]['title'] = soup.title.string if soup.title else "No title"
+        title_keywords = token_stop_stem(all_links[next_endpoint]['title'])
+        all_links[next_endpoint]['stem_title'] = " ".join(title_keywords)
+        all_links[next_endpoint]['url'] = url
+        all_links[next_endpoint]['last_mod_date'] = headers.get('Last-Modified', "No last modified date")
+        all_links[next_endpoint]['size'] = len(page_content)
+        if 'parent' not in all_links[next_endpoint]:
+          all_links[next_endpoint]['parent'] = []
+        if parent_endpoint != "":
+          all_links[next_endpoint]['parent'].append(parent_endpoint)
+
+        body_keywords = token_stop_stem(soup.get_text())
+        all_links[next_endpoint]['keywords'] = body_keywords
+
+        update_inverted_index(body_keywords, next_endpoint, inverted_index_body)
+        update_inverted_index(title_keywords, next_endpoint, inverted_index_title)
+
+        child_links = [link['href'] for link in soup.find_all('a', href=True)]
+        for link in child_links:
+          if(link[0] == '.'):
+            if(len(next_endpoint.split("/")) <= 2):
+              link = link[3:]
+            else:
+              link = "/".join(next_endpoint.split("/")[:-2]) + link[3:]
+          else:
+            if("/" in next_endpoint):
+              link = "/".join(next_endpoint.split("/")[:-1]) + "/" + link
+              
+          
+
+        all_links[next_endpoint]['links'] = child_links
+        all_links[next_endpoint]['index'] = indexed_pages + 1
+        indexed_pages += 1
+
+        # Add new links to the queue
+        for link in all_links[next_endpoint]['links']:
+          if link not in visited_links:
+            visited_links.add(link)
+            queue.append([link, next_endpoint])
+
+      except Exception as e:
+        print(f"Failed to fetch {url}: {e}")
+
+# Entry point for asynchronous scraping
+def run_async_spider(start_endpoint, all_links, max_pages):
+  global queue
+  queue.append([start_endpoint, ""])
+  asyncio.run(spider_async(start_endpoint, all_links, "", max_pages))
+
+# # Main execution
+
+# import time
+# start_time = time.time()  # Start the timer
+
+# all_links = {}
+
+# # Use the asynchronous spider instead of the synchronous one
+# run_async_spider("testpage.htm", all_links, 300)
+
+# # Write the inverted index for body text to a file
+# with open('inverted_index_body.txt', 'w') as body_file:
+#   for word, pages in get_inverted_index_body().items():
+#     try:
+#       body_file.write(f"{word}:\n")
+#     except Exception as e:
+#       continue
+#     for page, frequency in pages.items():
+#       body_file.write(f"  {page}: {frequency}\n")
+#     body_file.write("\n")
+
+# # Write the inverted index for titles to a file
+# with open('inverted_index_title.txt', 'w') as title_file:
+#   for word, pages in get_inverted_index_title().items():
+#     try:
+#       title_file.write(f"{word}:\n")
+#     except Exception as e:
+#       print(f"Failed to write word '{word}': {e}")
+#       continue
+#     for page, frequency in pages.items():
+#       title_file.write(f"  {page}: {frequency}\n")
+#     title_file.write("\n")
+    
+# end_time = time.time()  # End the timer
+# print(f"Execution time: {end_time - start_time:.2f} seconds")

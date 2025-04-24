@@ -31,47 +31,58 @@ def clear_database(connection):
   except Error as e:
     print(f"The error '{e}' occurred")
     
-def add_link(connection, title, stem_title, url, last_mod_date, size):
+def add_links_batch(connection, links):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO links (title, stem_title, url, last_mod_date, size) VALUES ('{title}', '{stem_title}', '{url}', '{last_mod_date}', {size})")
+    cursor.executemany(
+      """
+      INSERT INTO links (title, stem_title, url, last_mod_date, size) 
+      VALUES (?, ?, ?, ?, ?)
+      """, 
+      links
+    )
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
-    print(f"INSERT INTO links (title, stem_title, url, last_mod_date, size) VALUES ('{title}', '{stem_title}', '{url}', '{last_mod_date}', {size})")
+    
+def add_keyword_freq_batch(connection, keyword_freqs):
+  cursor = connection.cursor()
+  try:
+    cursor.executemany(
+      """
+      INSERT INTO keywords_freq (keyword, parent_group, frequency) 
+      VALUES (?, ?, ?)
+      """, 
+      keyword_freqs
+    )
+    connection.commit()
+  except Error as e:
+    print(f"The error '{e}' occurred")
 
-def add_keyword(connection, keyword):
+def add_child_links_batch(connection, child_links):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO keywords (keyword) VALUES ('{keyword}')")
+    cursor.executemany(
+      """
+      INSERT INTO child_links (parent_group, url) 
+      VALUES (?, ?)
+      """, 
+      child_links
+    )
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
-    print(f"INSERT INTO keywords (keyword) VALUES ('{keyword}')")
-    
-def add_keyword_freq(connection, keyword, parent_group, frequency):
+
+def add_parent_links_batch(connection, parent_links):
   cursor = connection.cursor()
   try:
-    cursor.execute(f"INSERT INTO keywords_freq (keyword, parent_group, frequency) VALUES ('{keyword}', {parent_group}, {frequency})")
+    cursor.executemany(
+      """
+      INSERT INTO parent_links (parent_group, url) 
+      VALUES (?, ?)
+      """, 
+      parent_links
+    )
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
-    print(f"INSERT INTO keywords_freq (keyword, parent_group, frequency) VALUES ('{keyword}', {parent_group}, {frequency})")
-    
-def add_child_link(connection, parent_group, url):
-  cursor = connection.cursor()
-  try:
-    cursor.execute(f"INSERT INTO child_links (parent_group, url) VALUES ({parent_group}, '{url}')")
-    connection.commit()
-  except Error as e:
-    print(f"The error '{e}' occurred")
-    print(f"INSERT INTO child_links (parent_group, url) VALUES ({parent_group}, '{url}')")
-    
-def add_parent_link(connection, parent_group, url):
-  cursor = connection.cursor()
-  try:
-    cursor.execute(f"INSERT INTO parent_links (parent_group, url) VALUES ({parent_group}, '{url}')")
-    connection.commit()
-  except Error as e:
-    print(f"The error '{e}' occurred")
-    print(f"INSERT INTO parent_links (parent_group, url) VALUES ({parent_group}, '{url}')")

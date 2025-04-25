@@ -83,17 +83,19 @@ async def spider_async(endpoint, all_links, parent, max_pages):
         update_inverted_index(title_keywords, next_endpoint, inverted_index_title)
 
         child_links = [link['href'] for link in soup.find_all('a', href=True)]
-        for link in child_links:
-          if(link[0] == '.'):
-            if(len(next_endpoint.split("/")) <= 2):
+
+        for i, link in enumerate(child_links):
+          if link[0] == '.':
+            if len(next_endpoint.split("/")) <= 2:
               link = link[3:]
             else:
               link = "/".join(next_endpoint.split("/")[:-2]) + link[3:]
           else:
-            if("/" in next_endpoint):
+            if "/" in next_endpoint:
               link = "/".join(next_endpoint.split("/")[:-1]) + "/" + link
-              
-          
+            else:
+              link = link
+          child_links[i] = link  # Update the list with the modified value
 
         all_links[next_endpoint]['links'] = child_links
         all_links[next_endpoint]['index'] = indexed_pages + 1

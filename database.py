@@ -16,6 +16,15 @@ def execute_query(connection, query):
   try:
     cursor.execute(query)
     connection.commit()
+    return cursor.fetchall()
+  except Error as e:
+    print(f"The error '{e}' occurred")
+  
+def create_table(connection, query):
+  cursor = connection.cursor()
+  try:
+    cursor.execute(query)
+    connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
 

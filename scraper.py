@@ -71,6 +71,7 @@ async def spider_async(all_links, max_pages, last_modified_dates=None):
   global indexed_pages
   global queue
   global count
+  global visited_links
   
   base_url = "https://www.cse.ust.hk/~kwtleung/COMP4321/"
   async with aiohttp.ClientSession() as session:
@@ -84,20 +85,19 @@ async def spider_async(all_links, max_pages, last_modified_dates=None):
 
         # Check if the last modified date is the same, if so, skip processing
         last_modified_date = headers.get('Last-Modified', "No last modified date")
-        if last_modified_dates and url in last_modified_dates:
-          if last_modified_dates[url] == last_modified_date:
-            all_links[next_endpoint]['links'] = fix_links([link['href'] for link in soup.find_all('a', href=True)], next_endpoint)
-            indexed_pages += 1
-            count += 1
-
-            # Add new links to the queue
-            for link in all_links[next_endpoint]['links']:
-              if link not in visited_links:
-                visited_links.add(link)
-                queue.append([link, next_endpoint])
+        if last_modified_dates and url in last_modified_dates and last_modified_dates[url] == last_modified_date:
+          indexed_pages += 1
+          count += 1
+          links = fix_links([link['href'] for link in soup.find_all('a', href=True)], next_endpoint)
+          # Add new links to the queue
+          for link in links:
+            if link not in visited_links:
+              visited_links.add(link)
+              queue.append([link, next_endpoint])
                 
         else:
           # Process the page (similar to the original spider function)
+          all_links[next_endpoint] = {}
           all_links[next_endpoint]['title'] = soup.title.string if soup.title else "No title"
           title_keywords = token_stop_stem(all_links[next_endpoint]['title'])
           all_links[next_endpoint]['stem_title'] = " ".join(title_keywords)
@@ -124,14 +124,18 @@ async def spider_async(all_links, max_pages, last_modified_dates=None):
             if link not in visited_links:
               visited_links.add(link)
               queue.append([link, next_endpoint])
+            else:
+              # If the link is already visited, check if it has a parent
+              if next_endpoint not in all_links[link]['parent']:
+                all_links[link]['parent'].append(next_endpoint)
 
       except Exception as e:
         print(f"Failed to fetch {url}: {e}")
 
 # Entry point for asynchronous scraping
 def run_async_spider(start_endpoint, all_links, max_pages, last_modified_dates=None):
-  global queue
   queue.append([start_endpoint, ""])
+  visited_links.add(start_endpoint)
   asyncio.run(spider_async(all_links, max_pages, last_modified_dates))
   print(count)
 

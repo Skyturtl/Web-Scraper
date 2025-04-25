@@ -1,10 +1,10 @@
-from database import create_connection, clear_database, create_table, add_links_batch, add_keyword_freq_batch, add_child_links_batch, add_parent_links_batch
+from database import create_connection, clear_database, create_table, add_links_batch, add_keyword_freq_batch, add_child_links_batch
 from scraper import run_async_spider
 
 # Database setup
 create_links_table = """
 CREATE TABLE IF NOT EXISTS links (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER PRIMARY KEY,
   title TEXT,
   stem_title TEXT,
   url TEXT NOT NULL,
@@ -33,21 +33,11 @@ CREATE TABLE IF NOT EXISTS child_links (
 );
 """
 
-create_parent_links_table = """
-CREATE TABLE IF NOT EXISTS parent_links (
-  parent_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  parent_group INTEGER,
-  url TEXT NOT NULL,
-  FOREIGN KEY (parent_group) REFERENCES links (id)
-);
-"""
-
 connection = create_connection("scraper.db")
 clear_database(connection)
 create_table(connection, create_links_table)
 create_table(connection, create_keywords_freq_table)
 create_table(connection, create_child_links_table)
-create_table(connection, create_parent_links_table)
 
 all_links = {}
 import time
@@ -55,54 +45,27 @@ start_time = time.time()  # Start the timer
 
 run_async_spider("testpage.htm", all_links, 300)
 
-# Write the scraped data to a file in a readable format
-with open("scraped_data.txt", "w", encoding="utf-8") as file:
-  for endpoint, data in all_links.items():
-    file.write(f"Endpoint: {endpoint}\n")
-    if data:
-      file.write(f"  Title: {data['title']}\n")
-      file.write(f"  Stem Title: {data['stem_title']}\n")
-      file.write(f"  URL: {data['url']}\n")
-      file.write(f"  Last Modified Date: {data['last_mod_date']}\n")
-      file.write(f"  Size: {data['size']}\n")
-      file.write(f"  Links: {', '.join(data['links'])}\n")
-      file.write(f"  Keywords: {', '.join(data['keywords'])}\n")
-      file.write(f"  Parent: {', '.join(data['parent']) if data['parent'] else 'None'}\n")
-    else:
-      file.write("  No data available.\n")
-    file.write("\n")
-
 # Create a list of tuples for batch insertion
 links_batch = []
 keyword_freq_batch = []
 child_links_batch = []
-parent_links_batch = []
 
 # Add the scraped data to the database
 for endpoint, data in all_links.items():
-  if data:
-    title = data['title'].replace("'", "''")
-    stem_title = data['stem_title'].replace("'", "''")
-    links_batch.append((title, stem_title, data['url'], data['last_mod_date'], data['size']))
-    
-    parent_group = data['index']
-    for link in data['links']:
-      child_links_batch.append((parent_group, link))
-    
-    temp = set()
-    for keyword in data['keywords']:
-      if keyword not in temp:
-        temp.add(keyword)
-        keyword_freq_batch.append((keyword, parent_group, data['keywords'].count(keyword)))
-    
-    if data['parent']:
-      for parent in data['parent']:
-        parent_links_batch.append((parent_group, parent))
-    else:
-      parent_links_batch.append((parent_group, None))
+  if not data:
+    continue
 
-add_links_batch(connection, links_batch)
-add_parent_links_batch(connection, parent_links_batch)   
+  parent_group = data['index']
+  title = data['title'].replace("'", "''")
+  stem_title = data['stem_title'].replace("'", "''")
+  links_batch.append((parent_group, title, stem_title, data['url'], data['last_mod_date'], data['size']))
+
+  child_links_batch.extend((parent_group, link) for link in data['links'])
+
+  keyword_counts = {keyword: data['keywords'].count(keyword) for keyword in set(data['keywords'])}
+  keyword_freq_batch.extend((keyword, parent_group, count) for keyword, count in keyword_counts.items())
+
+add_links_batch(connection, links_batch) 
 add_child_links_batch(connection, child_links_batch)
 add_keyword_freq_batch(connection, keyword_freq_batch)   
 

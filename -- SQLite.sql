@@ -1,2 +1,4 @@
 -- SQLite
-SELECT url, last_mod_date FROM links;
+UPDATE links
+SET last_mod_date = "last"
+Where id < 50

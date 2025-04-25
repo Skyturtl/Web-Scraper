@@ -1,4 +1,4 @@
-from database import create_connection, clear_database, execute_query, add_links_batch, add_keyword_freq_batch, add_child_links_batch, add_parent_links_batch
+from database import create_connection, clear_database, create_table, add_links_batch, add_keyword_freq_batch, add_child_links_batch, add_parent_links_batch
 from scraper import run_async_spider
 
 # Database setup
@@ -44,10 +44,10 @@ CREATE TABLE IF NOT EXISTS parent_links (
 
 connection = create_connection("scraper.db")
 clear_database(connection)
-execute_query(connection, create_links_table)
-execute_query(connection, create_keywords_freq_table)
-execute_query(connection, create_child_links_table)
-execute_query(connection, create_parent_links_table)
+create_table(connection, create_links_table)
+create_table(connection, create_keywords_freq_table)
+create_table(connection, create_child_links_table)
+create_table(connection, create_parent_links_table)
 
 all_links = {}
 import time

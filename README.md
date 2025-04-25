@@ -3,7 +3,7 @@ For HKUST class COMP4321 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
 
 ## Prerequisites:
 - Python 3.x
-- Required Python libraries(requests, beautifulsoup4, nltk, sqlite3)
+- Required Python libraries(requests, beautifulsoup4, nltk, sqlite3, aiohttp)
 - Internet connection (for downloading NLTK tokenizer)
   
 ## Project Structure: 

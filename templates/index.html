@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Engine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        a {
+            text-decoration: none;
+            color: #007BFF;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Search Engine</h1>
+    <form method="POST" action="index.html">
+        <input type="text" name="query" placeholder="Enter your query" value="{{ query }}" required>
+        <button type="submit">Search</button>
+    </form>
+
+
+    <ul>
+        {% if results %}
+            {% for result in results %}
+            <li>
+                <strong>Score (Rank):</strong> {{ result['score'] }} ({{ result['rank'] }})<br>
+                
+                    <strong>Page Title:</strong> {{ result['page_detail']['title'] }}<br>
+                    <strong>URL:</strong> <a href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['url'] }}</a><br>
+                    <strong>Last Modified:</strong> {{ result['page_detail']['last_modified'] }}<br>
+                    <strong>Size:</strong> {{ result['page_detail']['size'] }} bytes<br>
+                    <strong>Keywords:</strong> {{ result['page_detail']['keywords'] }}<br>
+                    <strong>Parent Links:</strong>
+                        <ul>
+                            {% for parent_link in result['page_detail']['parent_links'] %}
+                            <a href="{{ parent_link }}">{{ parent_link }}</a>
+                            {% endfor %}
+                        </ul><br>
+                    
+                    <strong>Child Links:</strong>
+                        <ul>
+                            {% for child_link in result['page_detail']['child_links'] %}
+                            <a href="{{ child_link }}">{{ child_link }}</a>
+                            {% endfor %}
+                        </ul><br>
+                
+            </li>
+            {% endfor %}
+        {% else %}
+            {% if query %}
+            <li>No results found for "{{ query }}"</li>
+            {% endif %}
+        {% endif %}
+    </ul>
+
+    <script>
+        function sortResults(order) {
+            const resultsList = document.querySelector('ul');
+            const items = Array.from(resultsList.querySelectorAll('li[data-score]'));
+
+            items.sort((a, b) => {
+                const scoreA = parseFloat(a.getAttribute('data-score'));
+                const scoreB = parseFloat(b.getAttribute('data-score'));
+                return order === 'desc' ? scoreB - scoreA : scoreA - scoreB;
+            });
+
+            // Clear and re-append sorted items
+            resultsList.innerHTML = '';
+            items.forEach(item => resultsList.appendChild(item));
+        }
+    </script>
+</body>
+</html>

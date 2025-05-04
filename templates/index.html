@@ -35,8 +35,13 @@
                 &nbsp;&nbsp;- Term Frequency: {{ details.term_freq }} (of {{ details.total_terms }} total terms)<br>
                 &nbsp;&nbsp;- TF: {{ details.tf }}<br>
                 &nbsp;&nbsp;- IDF: log({{ result.total_docs }}/{{ details.doc_count }}) = {{ details.idf }}<br>
-                &nbsp;&nbsp;- TF-IDF: {{ details.tf }} × {{ details.idf }} = {{ details.tfidf }}<br>
-            {% endfor %}
+                &nbsp;&nbsp;- TF-IDF: {{ details.tf }} × {{ details.idf }} = {{ details.tfidf }}<br>                {% if details.boost_applied %}
+                &nbsp;&nbsp;- <strong>Title Match Boost Applied:</strong> Yes (Factor: {{ details.boost_applied }})<br>
+            {% else %}
+                &nbsp;&nbsp;- Title Match Boost Applied: No<br>
+            {% endif %}
+            
+                {% endfor %}
             
             <strong>Keyword Appearances:</strong> {{ result['keyword_count'] }}<br>
             <strong>Score (Rank):</strong> {{ result['score'] }} ({{ result['rank'] }})<br>

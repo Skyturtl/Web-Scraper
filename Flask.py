@@ -5,7 +5,7 @@ from flask import Flask, request, render_template
 app = Flask(__name__)
 
 # Modified calculate_tfidf function
-def calculate_tfidf(query):
+def calculate_tfidf(query, title_boost_factor=1.5):
     conn = sqlite3.connect("scraper.db")
     cursor = conn.cursor()
 
@@ -47,6 +47,16 @@ def calculate_tfidf(query):
             tf = frequency / total_terms
             tfidf = tf * idf
 
+            # Check if the term is in the title for Title Match Boosting
+            cursor.execute(f"""
+                SELECT stem_title FROM links WHERE id = ?
+            """, (parent_group,))
+            title = cursor.fetchone()
+            boost_applied = False
+            if title and term in title[0].lower():
+                tfidf *= title_boost_factor  # Apply the boost factor
+                boost_applied = True  # Mark that boost was applied
+
             # Store calculation details
             calc_details.setdefault(parent_group, {}).setdefault(term, {
                 'tf': round(tf, 4),
@@ -54,7 +64,8 @@ def calculate_tfidf(query):
                 'tfidf': round(tfidf, 4),
                 'doc_count': doc_count,
                 'total_terms': total_terms,
-                'term_freq': frequency
+                'term_freq': frequency,
+                'boost_applied': boost_applied  # Add boost visibility
             })
 
             # Update scores and frequencies

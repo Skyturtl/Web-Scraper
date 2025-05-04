@@ -2,6 +2,7 @@ from database import create_connection, clear_database, create_table, add_links_
 from scraper import run_async_spider
 
 # Database setup
+#update Added parent links
 create_links_table = """
 CREATE TABLE IF NOT EXISTS links (
   id INTEGER PRIMARY KEY,
@@ -9,7 +10,8 @@ CREATE TABLE IF NOT EXISTS links (
   stem_title TEXT,
   url TEXT NOT NULL,
   last_mod_date TEXT,
-  size INTEGER
+  size INTEGER,
+  parent_links TEXT  
 );
 """
 
@@ -58,7 +60,8 @@ for endpoint, data in all_links.items():
   parent_group = data['index']
   title = data['title'].replace("'", "''")
   stem_title = data['stem_title'].replace("'", "''")
-  links_batch.append((parent_group, title, stem_title, data['url'], data['last_mod_date'], data['size']))
+  parent_links = ";".join(data['parent'])
+  links_batch.append((parent_group, title, stem_title, data['url'], data['last_mod_date'], data['size'], parent_links))
 
   child_links_batch.extend((parent_group, link) for link in data['links'])
 

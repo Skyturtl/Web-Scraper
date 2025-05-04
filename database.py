@@ -43,8 +43,8 @@ def add_links_batch(connection, links):
   try:
     cursor.executemany(
       """
-      INSERT INTO links (id, title, stem_title, url, last_mod_date, size) 
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO links (id, title, stem_title, url, last_mod_date, size,parent_links) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       """, 
       links
     )

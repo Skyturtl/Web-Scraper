@@ -4,64 +4,75 @@ from flask import Flask, request, render_template
 
 app = Flask(__name__)
 
-def calculate_tfidf(query, exact=False):
+# Modified calculate_tfidf function
+def calculate_tfidf(query):
     conn = sqlite3.connect("scraper.db")
     cursor = conn.cursor()
 
     query_terms = query.lower().split()
     cursor.execute("SELECT COUNT(*) FROM links")
-    total_documents = int(cursor.fetchone()[0])  # Ensure total_documents is an integer
+    total_documents = int(cursor.fetchone()[0])
 
     doc_scores = {}
+    total_freqs = {}  # Track total keyword appearances
+    calc_details = {}  # Store calculation details
 
     for term in query_terms:
-        # Exact match for keywords if the exact flag is True
-        condition = "=" if exact else "LIKE"
-        term_value = term if exact else f"%{term}%"
+        condition = "LIKE"
+        term_value = f"%{term}%"
 
+        # Get document count containing the term
         cursor.execute(f"""
             SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword {condition} ?
         """, (term_value,))
-        doc_count = cursor.fetchone()[0]
+        doc_count = cursor.fetchone()[0] or 1
 
-        if doc_count == 0:
-            continue
+        # Calculate IDF
+        idf = math.log(total_documents / doc_count) if doc_count else 0
 
-        doc_count = int(doc_count)  # Convert doc_count to an integer
-        idf = math.log(total_documents / doc_count) if doc_count else 0  # Avoid division by zero
-
+        # Get term frequencies
         cursor.execute(f"""
             SELECT parent_group, frequency FROM keywords_freq WHERE keyword {condition} ?
         """, (term_value,))
         term_data = cursor.fetchall()
 
         for parent_group, frequency in term_data:
+            # Get total terms in document
             cursor.execute("""
                 SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
             """, (parent_group,))
-            total_terms = cursor.fetchone()[0] or 1  # Avoid division by zero
-            total_terms = int(total_terms)  # Convert total_terms to an integer
+            total_terms = cursor.fetchone()[0] or 1
 
-            frequency = int(frequency)  # Convert frequency to an integer
-            tf = frequency / total_terms  # Calculate term frequency (TF)
-            tfidf = tf * idf  # Calculate TF-IDF
+            # Calculate TF and TF-IDF
+            tf = frequency / total_terms
+            tfidf = tf * idf
 
-            if parent_group not in doc_scores:
-                doc_scores[parent_group] = 0
-            doc_scores[parent_group] += tfidf
+            # Store calculation details
+            calc_details.setdefault(parent_group, {}).setdefault(term, {
+                'tf': round(tf, 4),
+                'idf': round(idf, 4),
+                'tfidf': round(tfidf, 4),
+                'doc_count': doc_count,
+                'total_terms': total_terms,
+                'term_freq': frequency
+            })
 
-    # Normalize scores by the number of query terms
+            # Update scores and frequencies
+            doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
+            total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
+
+    # Normalize scores
     if query_terms:
         num_terms = len(query_terms)
         for doc in doc_scores:
             doc_scores[doc] /= num_terms
 
     conn.close()
-    return doc_scores
+    return doc_scores, total_freqs, calc_details, total_documents
 
-def fetch_ranked_results(query, sort_order="desc", exact=False):
-    doc_scores = calculate_tfidf(query, exact=exact)
-    ranked_docs = sorted(doc_scores.items(), key=lambda x: x[1], reverse=(sort_order == "desc"))
+def fetch_ranked_results(query):
+    doc_scores, total_freqs, calc_details, total_docs = calculate_tfidf(query)
+    ranked_docs = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)
 
     results = []
     conn = sqlite3.connect("scraper.db")
@@ -102,6 +113,9 @@ def fetch_ranked_results(query, sort_order="desc", exact=False):
         results.append({
             "rank": rank,
             "score": round(score, 3),
+            "keyword_count": total_freqs.get(parent_group, 0),
+            "calc_details": calc_details.get(parent_group, {}),
+            "total_docs": total_docs,
             "page_detail": {
                 "title": title,
                 "url": url,
@@ -161,21 +175,22 @@ def index():
     results = []
     similar_pages = []
     query = ""
-    sort_order = "desc"
-    exact = False
 
     if request.method == "POST":
         query = request.form["query"]
         sort_order = request.form.get("sort_order", "desc")
-        exact = "exact" in request.form
-        results = fetch_ranked_results(query, sort_order, exact=exact)
+        results = fetch_ranked_results(query)
 
         # Fetch similar pages if a URL is clicked
         similar_url = request.form.get("similar_url")
         if similar_url:
             similar_pages = fetch_similar_pages(similar_url)
 
-    return render_template("index.html", query=query, results=results, sort_order=sort_order, exact=exact, similar_pages=similar_pages)
-
+    return render_template(
+        "index.html",
+        query=query,
+        results=results,
+        similar_pages=similar_pages
+    )
 if __name__ == "__main__":
     app.run(debug=True)

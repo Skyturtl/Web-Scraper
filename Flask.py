@@ -1,125 +1,208 @@
 import sqlite3
 import math
-import re
 from flask import Flask, request, render_template
+import re
 
 app = Flask(__name__)
 
-def process_phrase(query_phrase, parent_group, cursor):
-    phrase_terms = query_phrase.split()
-    if len(phrase_terms) < 2:
-        return False
-    
-    positions = []
-    for term in phrase_terms:
-        cursor.execute("""
-            SELECT positions FROM (
-                SELECT word, parent_group, positions FROM body_positions
-                UNION ALL
-                SELECT word, parent_group, positions FROM title_positions
-            ) WHERE word = ? AND parent_group = ?
-        """, (term, parent_group))
-        pos_data = cursor.fetchone()
-        if not pos_data:
-            return False
-        positions.append(list(map(int, pos_data[0].split(','))))
-    
-    for pos in positions[0]:
-        valid = True
-        for i in range(1, len(phrase_terms)):
-            if (pos + i) not in positions[i]:
-                valid = False
-                break
-        if valid:
-            return True
-    return False
+# Helper function to extract phrases and terms
+def extract_phrases_and_terms(query):
+    # Extract phrases in quotes and individual terms
+    phrases = re.findall(r'"(.*?)"', query)
+    terms = re.findall(r'\b\w+\b', query)
+    terms = [term for term in terms if term not in phrases]  # Exclude phrases from terms
+    return phrases, terms
 
-# Modified calculate_tfidf function
-def calculate_tfidf(query, title_boost_factor=1.5):
+# Calculate TF-IDF function (with mode switching)
+def calculate_tfidf(query, mode="mode1", title_boost_factor=1.5):
     conn = sqlite3.connect("scraper.db")
     cursor = conn.cursor()
-    phrases = re.findall(r'"([^"]+)"', query)
-    query_terms = re.sub(r'"[^"]+"', '', query).split()
 
-    #query_terms = query.lower().split()
+    # Extract phrases and terms
+    phrases, query_terms = extract_phrases_and_terms(query)
+
     cursor.execute("SELECT COUNT(*) FROM links")
     total_documents = int(cursor.fetchone()[0])
 
     doc_scores = {}
-    total_freqs = {}  # Track total keyword appearances
-    calc_details = {}  # Store calculation details
+    total_freqs = {}
+    calc_details = {}
 
-    for term in query_terms:
-        condition = "LIKE"
-        term_value = f"%{term}%"
-
-        # Get document count containing the term
-        cursor.execute(f"""
-            SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword {condition} ?
-        """, (term_value,))
-        doc_count = cursor.fetchone()[0] or 1
-
-        # Calculate IDF
-        idf = math.log(total_documents / doc_count) if doc_count else 0
-
-        # Get term frequencies
-        cursor.execute(f"""
-            SELECT parent_group, frequency FROM keywords_freq WHERE keyword {condition} ?
-        """, (term_value,))
-        term_data = cursor.fetchall()
-
-        for parent_group, frequency in term_data:
-            # Get total terms in document
+    # Mode 1: Phrase Search Support
+    if mode == "mode1":
+        # Process phrases
+        for phrase in phrases:
+            # Check if the phrase appears in the body positions
             cursor.execute("""
-                SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
-            """, (parent_group,))
-            total_terms = cursor.fetchone()[0] or 1
+                SELECT parent_group, positions FROM body_positions WHERE word = ?
+            """, (phrase,))
+            body_matches = cursor.fetchall()
 
-            # Calculate TF and TF-IDF
-            tf = frequency / total_terms
-            tfidf = tf * idf
+            # Check if the phrase appears in the title positions
+            cursor.execute("""
+                SELECT parent_group, positions FROM title_positions WHERE word = ?
+            """, (phrase,))
+            title_matches = cursor.fetchall()
 
-            # Check if the term is in the title for Title Match Boosting
+            # Combine matches and calculate TF-IDF for phrases
+            matches = body_matches + title_matches
+            doc_count = len(matches) or 1
+            idf = math.log(total_documents / doc_count)
+
+            for parent_group, positions in matches:
+                # Calculate TF
+                position_list = list(map(int, positions.split(',')))
+                tf = len(position_list) / total_documents
+                tfidf = tf * idf
+
+                # Boost if found in the title
+                boost_applied = False
+                cursor.execute("""
+                    SELECT stem_title FROM links WHERE id = ?
+                """, (parent_group,))
+                title = cursor.fetchone()
+                if title and phrase in title[0].lower():
+                    tfidf *= title_boost_factor
+                    boost_applied = True
+
+                # Store calculation details
+                calc_details.setdefault(parent_group, {}).setdefault(phrase, {
+                    'tf': round(tf, 4),
+                    'idf': round(idf, 4),
+                    'tfidf': round(tfidf, 4),
+                    'doc_count': doc_count,
+                    'boost_applied': boost_applied
+                })
+
+                # Update scores
+                doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
+                total_freqs[parent_group] = total_freqs.get(parent_group, 0) + 1
+
+        # Process individual terms
+        for term in query_terms:
+            condition = "LIKE"
+            term_value = f"%{term}%"
+
+            # Get document count containing the term
             cursor.execute(f"""
-                SELECT stem_title FROM links WHERE id = ?
-            """, (parent_group,))
-            title = cursor.fetchone()
-            boost_applied = False
-            if title and term in title[0].lower():
-                tfidf *= title_boost_factor  # Apply the boost factor
-                boost_applied = True  # Mark that boost was applied
+                SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword {condition} ?
+            """, (term_value,))
+            doc_count = cursor.fetchone()[0] or 1
 
-            # Store calculation details
-            calc_details.setdefault(parent_group, {}).setdefault(term, {
-                'tf': round(tf, 4),
-                'idf': round(idf, 4),
-                'tfidf': round(tfidf, 4),
-                'doc_count': doc_count,
-                'total_terms': total_terms,
-                'term_freq': frequency,
-                'boost_applied': boost_applied  # Add boost visibility
-            })
+            # Calculate IDF
+            idf = math.log(total_documents / doc_count) if doc_count else 0
 
-            # Update scores and frequencies
-            doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
-            total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
+            # Get term frequencies
+            cursor.execute(f"""
+                SELECT parent_group, frequency FROM keywords_freq WHERE keyword {condition} ?
+            """, (term_value,))
+            term_data = cursor.fetchall()
 
-    for phrase in phrases:
-        for parent_group in doc_scores.keys():
-            if process_phrase(phrase, parent_group, cursor):
-                doc_scores[parent_group] *= 1.2  
+            for parent_group, frequency in term_data:
+                # Get total terms in document
+                cursor.execute("""
+                    SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
+                """, (parent_group,))
+                total_terms = cursor.fetchone()[0] or 1
+
+                # Calculate TF and TF-IDF
+                tf = frequency / total_terms
+                tfidf = tf * idf
+
+                # Check if the term is in the title for Title Match Boosting
+                cursor.execute(f"""
+                    SELECT stem_title FROM links WHERE id = ?
+                """, (parent_group,))
+                title = cursor.fetchone()
+                boost_applied = False
+                if title and term in title[0].lower():
+                    tfidf *= title_boost_factor  # Apply the boost factor
+                    boost_applied = True  # Mark that boost was applied
+
+                # Store calculation details
+                calc_details.setdefault(parent_group, {}).setdefault(term, {
+                    'tf': round(tf, 4),
+                    'idf': round(idf, 4),
+                    'tfidf': round(tfidf, 4),
+                    'doc_count': doc_count,
+                    'total_terms': total_terms,
+                    'term_freq': frequency,
+                    'boost_applied': boost_applied  # Add boost visibility
+                })
+
+                # Update scores and frequencies
+                doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
+                total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
+
+    # Mode 2: Old Search (Process terms only, no phrase handling)
+    elif mode == "mode2":
+        for term in query_terms:
+            condition = "LIKE"
+            term_value = f"%{term}%"
+
+            # Get document count containing the term
+            cursor.execute(f"""
+                SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword {condition} ?
+            """, (term_value,))
+            doc_count = cursor.fetchone()[0] or 1
+
+            # Calculate IDF
+            idf = math.log(total_documents / doc_count) if doc_count else 0
+
+            # Get term frequencies
+            cursor.execute(f"""
+                SELECT parent_group, frequency FROM keywords_freq WHERE keyword {condition} ?
+            """, (term_value,))
+            term_data = cursor.fetchall()
+
+            for parent_group, frequency in term_data:
+                # Get total terms in document
+                cursor.execute("""
+                    SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
+                """, (parent_group,))
+                total_terms = cursor.fetchone()[0] or 1
+
+                # Calculate TF and TF-IDF
+                tf = frequency / total_terms
+                tfidf = tf * idf
+
+                # Check if the term is in the title for Title Match Boosting
+                cursor.execute(f"""
+                    SELECT stem_title FROM links WHERE id = ?
+                """, (parent_group,))
+                title = cursor.fetchone()
+                boost_applied = False
+                if title and term in title[0].lower():
+                    tfidf *= title_boost_factor  # Apply the boost factor
+                    boost_applied = True  # Mark that boost was applied
+
+                # Store calculation details
+                calc_details.setdefault(parent_group, {}).setdefault(term, {
+                    'tf': round(tf, 4),
+                    'idf': round(idf, 4),
+                    'tfidf': round(tfidf, 4),
+                    'doc_count': doc_count,
+                    'total_terms': total_terms,
+                    'term_freq': frequency,
+                    'boost_applied': boost_applied  # Add boost visibility
+                })
+
+                # Update scores and frequencies
+                doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
+                total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
 
     # Normalize scores
-    if query_terms:
-        num_terms = len(query_terms)
+    if query_terms or phrases:
+        num_components = len(query_terms) + len(phrases)
         for doc in doc_scores:
-            doc_scores[doc] /= num_terms
+            doc_scores[doc] /= num_components
 
     conn.close()
     return doc_scores, total_freqs, calc_details, total_documents
 
-def fetch_ranked_results(query):
-    doc_scores, total_freqs, calc_details, total_docs = calculate_tfidf(query)
+# Fetch ranked results
+def fetch_ranked_results(query, mode="mode1"):
+    doc_scores, total_freqs, calc_details, total_docs = calculate_tfidf(query, mode)
     ranked_docs = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)
 
     results = []
@@ -144,12 +227,15 @@ def fetch_ranked_results(query):
         """, (parent_group,))
         keywords = cursor.fetchall()
         keyword_details = "; ".join([f"{kw} {freq}" for kw, freq in keywords])
+        
 
         # Fetch all parent links
         cursor.execute("""
-            SELECT url FROM links WHERE id = ?
+            SELECT parent_links FROM links WHERE id = ?
         """, (parent_group,))
-        parent_links = [row[0] for row in cursor.fetchall()]
+        row = cursor.fetchone()
+        parent_links_str = row[0] if row else ""
+        parent_links = parent_links_str.split(';') if parent_links_str else []
 
         # Fetch all child links
         cursor.execute("""
@@ -178,67 +264,23 @@ def fetch_ranked_results(query):
     conn.close()
     return results
 
-def fetch_similar_pages(url):
-    conn = sqlite3.connect("scraper.db")
-    cursor = conn.cursor()
-
-    # Fetch keywords for the given URL
-    cursor.execute("""
-        SELECT parent_group FROM links WHERE url = ?
-    """, (url,))
-    parent_group = cursor.fetchone()
-    if not parent_group:
-        conn.close()
-        return []
-
-    cursor.execute("""
-        SELECT keyword FROM keywords_freq WHERE parent_group = ?
-    """, (parent_group[0],))
-    keywords = [row[0] for row in cursor.fetchall()]
-
-    # Fetch pages that share these keywords
-    results = []
-    for keyword in keywords:
-        cursor.execute("""
-            SELECT DISTINCT parent_group FROM keywords_freq WHERE keyword = ?
-        """, (keyword,))
-        related_groups = cursor.fetchall()
-        for group in related_groups:
-            if group[0] != parent_group[0]:
-                cursor.execute("""
-                    SELECT title, url FROM links WHERE id = ?
-                """, (group[0],))
-                link_row = cursor.fetchone()
-                if link_row:
-                    results.append({
-                        "title": link_row[0],
-                        "url": link_row[1]
-                    })
-
-    conn.close()
-    return results
-
 @app.route("/index.html", methods=["GET", "POST"])
 def index():
     results = []
-    similar_pages = []
     query = ""
+    mode = "mode1"  # Default mode is phrase search
 
     if request.method == "POST":
         query = request.form["query"]
-        sort_order = request.form.get("sort_order", "desc")
-        results = fetch_ranked_results(query)
-
-        # Fetch similar pages if a URL is clicked
-        similar_url = request.form.get("similar_url")
-        if similar_url:
-            similar_pages = fetch_similar_pages(similar_url)
+        mode = request.form.get("mode", "mode1")  # Get mode from user input
+        results = fetch_ranked_results(query, mode)
 
     return render_template(
         "index.html",
         query=query,
         results=results,
-        similar_pages=similar_pages
+        mode=mode
     )
+
 if __name__ == "__main__":
     app.run(debug=True)

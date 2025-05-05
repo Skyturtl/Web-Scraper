@@ -139,3 +139,32 @@ def update_keyword_freq_batch(connection, keyword_freqs):
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")
+
+#add_index_body_positions_batch
+def add_index_body_positions_batch(connection, body_positions):
+    cursor = connection.cursor()
+    try:
+        cursor.executemany(
+            """
+            INSERT INTO body_positions (word, parent_group, positions) 
+            VALUES (?, ?, ?)
+            """, 
+            body_positions
+        )
+        connection.commit()
+    except Error as e:
+        print(f"The error '{e}' occurred while inserting into body_positions")
+
+def add_index_title_positions_batch(connection, title_positions):
+    cursor = connection.cursor()
+    try:
+        cursor.executemany(
+            """
+            INSERT INTO title_positions (word, parent_group, positions) 
+            VALUES (?, ?, ?)
+            """, 
+            title_positions
+        )
+        connection.commit()
+    except Error as e:
+        print(f"The error '{e}' occurred while inserting into title_positions")

@@ -4,14 +4,45 @@ from flask import Flask, request, render_template
 
 app = Flask(__name__)
 
+def process_phrase(query_phrase, parent_group, cursor):
+    phrase_terms = query_phrase.split()
+    if len(phrase_terms) < 2:
+        return False
+    
+    positions = []
+    for term in phrase_terms:
+        cursor.execute("""
+            SELECT positions FROM (
+                SELECT word, parent_group, positions FROM body_positions
+                UNION ALL
+                SELECT word, parent_group, positions FROM title_positions
+            ) WHERE word = ? AND parent_group = ?
+        """, (term, parent_group))
+        pos_data = cursor.fetchone()
+        if not pos_data:
+            return False
+        positions.append(list(map(int, pos_data[0].split(','))))
+    
+    for pos in positions[0]:
+        valid = True
+        for i in range(1, len(phrase_terms)):
+            if (pos + i) not in positions[i]:
+                valid = False
+                break
+        if valid:
+            return True
+    return False
+
 # Modified calculate_tfidf function
 def calculate_tfidf(query, title_boost_factor=1.5):
     conn = sqlite3.connect("scraper.db")
     cursor = conn.cursor()
+    phrases = re.findall(r'"([^"]+)"', query)
+    query_terms = re.sub(r'"[^"]+"', '', query).split()
 
-    query_terms = query.lower().split()
-    cursor.execute("SELECT COUNT(*) FROM links")
-    total_documents = int(cursor.fetchone()[0])
+    #query_terms = query.lower().split()
+    #cursor.execute("SELECT COUNT(*) FROM links")
+    #total_documents = int(cursor.fetchone()[0])
 
     doc_scores = {}
     total_freqs = {}  # Track total keyword appearances
@@ -71,6 +102,11 @@ def calculate_tfidf(query, title_boost_factor=1.5):
             # Update scores and frequencies
             doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
             total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
+
+    for phrase in phrases:
+        for parent_group in doc_scores.keys():
+            if process_phrase(phrase, parent_group, cursor):
+                doc_scores[parent_group] *= 1.2  
 
     # Normalize scores
     if query_terms:

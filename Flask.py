@@ -1,5 +1,6 @@
 import sqlite3
 import math
+import re
 from flask import Flask, request, render_template
 
 app = Flask(__name__)
@@ -41,8 +42,8 @@ def calculate_tfidf(query, title_boost_factor=1.5):
     query_terms = re.sub(r'"[^"]+"', '', query).split()
 
     #query_terms = query.lower().split()
-    #cursor.execute("SELECT COUNT(*) FROM links")
-    #total_documents = int(cursor.fetchone()[0])
+    cursor.execute("SELECT COUNT(*) FROM links")
+    total_documents = int(cursor.fetchone()[0])
 
     doc_scores = {}
     total_freqs = {}  # Track total keyword appearances

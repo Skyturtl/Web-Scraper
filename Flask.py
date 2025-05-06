@@ -2,8 +2,16 @@ import sqlite3
 import math
 from flask import Flask, request, render_template
 import re
+from collections import Counter  
+from textblob import TextBlob  # Add this for spelling correction
 
 app = Flask(__name__)
+# Spelling correction helper function
+def suggest_correction(query):
+    """Suggest spelling corrections for the given query."""
+    blob = TextBlob(query)
+    corrected_query = str(blob.correct())  # Automatically correct the query
+    return corrected_query if corrected_query.lower() != query.lower() else None
 
 # Helper function to extract phrases and terms
 def extract_phrases_and_terms(query):
@@ -13,8 +21,22 @@ def extract_phrases_and_terms(query):
     terms = [term for term in terms if term not in phrases]  # Exclude phrases from terms
     return phrases, terms
 
+# **Cosine Similarity Function** (Newly implemented)
+def calculate_cosine_similarity(query_vector, doc_vector):
+    """Calculate cosine similarity between query and document vectors."""
+    # Compute dot product
+    dot_product = sum(query_vector[key] * doc_vector.get(key, 0) for key in query_vector)
+    # Compute magnitudes
+    query_magnitude = math.sqrt(sum(value**2 for value in query_vector.values()))
+    doc_magnitude = math.sqrt(sum(value**2 for value in doc_vector.values()))
+    # Avoid division by zero
+    if query_magnitude == 0 or doc_magnitude == 0:
+        return 0
+    return dot_product / (query_magnitude * doc_magnitude)
+
+
 # Calculate TF-IDF function (with mode switching)
-def calculate_tfidf(query, mode="mode1", title_boost_factor=1.5):
+def calculate_tfidf(query, mode="mode1", title_boost_factor=3):
     conn = sqlite3.connect("scraper.db")
     cursor = conn.cursor()
 
@@ -27,6 +49,7 @@ def calculate_tfidf(query, mode="mode1", title_boost_factor=1.5):
     doc_scores = {}
     total_freqs = {}
     calc_details = {}
+    query_vector = Counter(query_terms)  # For cosine similarity
 
     # Mode 1: Phrase Search Support
     if mode == "mode1":
@@ -52,6 +75,12 @@ def calculate_tfidf(query, mode="mode1", title_boost_factor=1.5):
             for parent_group, positions in matches:
                 # Calculate TF
                 position_list = list(map(int, positions.split(',')))
+                is_consecutive = all(
+                    position_list[i] + 1 == position_list[i + 1] for i in range(len(position_list) - 1)
+                )
+                if not is_consecutive:  # Skip non-consecutive matches
+                    continue
+
                 tf = len(position_list) / total_documents
                 tfidf = tf * idf
 
@@ -134,68 +163,11 @@ def calculate_tfidf(query, mode="mode1", title_boost_factor=1.5):
                 doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
                 total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
 
-    # Mode 2: Old Search (Process terms only, no phrase handling)
-    elif mode == "mode2":
-        for term in query_terms:
-            condition = "LIKE"
-            term_value = f"%{term}%"
-
-            # Get document count containing the term
-            cursor.execute(f"""
-                SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword {condition} ?
-            """, (term_value,))
-            doc_count = cursor.fetchone()[0] or 1
-
-            # Calculate IDF
-            idf = math.log(total_documents / doc_count) if doc_count else 0
-
-            # Get term frequencies
-            cursor.execute(f"""
-                SELECT parent_group, frequency FROM keywords_freq WHERE keyword {condition} ?
-            """, (term_value,))
-            term_data = cursor.fetchall()
-
-            for parent_group, frequency in term_data:
-                # Get total terms in document
-                cursor.execute("""
-                    SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
-                """, (parent_group,))
-                total_terms = cursor.fetchone()[0] or 1
-
-                # Calculate TF and TF-IDF
-                tf = frequency / total_terms
-                tfidf = tf * idf
-
-                # Check if the term is in the title for Title Match Boosting
-                cursor.execute(f"""
-                    SELECT stem_title FROM links WHERE id = ?
-                """, (parent_group,))
-                title = cursor.fetchone()
-                boost_applied = False
-                if title and term in title[0].lower():
-                    tfidf *= title_boost_factor  # Apply the boost factor
-                    boost_applied = True  # Mark that boost was applied
-
-                # Store calculation details
-                calc_details.setdefault(parent_group, {}).setdefault(term, {
-                    'tf': round(tf, 4),
-                    'idf': round(idf, 4),
-                    'tfidf': round(tfidf, 4),
-                    'doc_count': doc_count,
-                    'total_terms': total_terms,
-                    'term_freq': frequency,
-                    'boost_applied': boost_applied  # Add boost visibility
-                })
-
-                # Update scores and frequencies
-                doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
-                total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
-
     # Normalize scores
     if query_terms or phrases:
-        num_components = len(query_terms) + len(phrases)
-        for doc in doc_scores:
-            doc_scores[doc] /= num_components
+        for doc, score in doc_scores.items():
+            doc_vector = Counter(calc_details[doc].keys())
+            doc_scores[doc] = calculate_cosine_similarity(query_vector, doc_vector) * score
 
     conn.close()
     return doc_scores, total_freqs, calc_details, total_documents
@@ -227,7 +199,7 @@ def fetch_ranked_results(query, mode="mode1"):
         """, (parent_group,))
         keywords = cursor.fetchall()
         keyword_details = "; ".join([f"{kw} {freq}" for kw, freq in keywords])
-        
+        base_url = "https://www.cse.ust.hk/~kwtleung/COMP4321/"
 
         # Fetch all parent links
         cursor.execute("""
@@ -235,13 +207,13 @@ def fetch_ranked_results(query, mode="mode1"):
         """, (parent_group,))
         row = cursor.fetchone()
         parent_links_str = row[0] if row else ""
-        parent_links = parent_links_str.split(';') if parent_links_str else []
+        parent_links = [base_url + link for link in parent_links_str.split(';')] if parent_links_str else []
 
         # Fetch all child links
         cursor.execute("""
             SELECT url FROM child_links WHERE parent_group = ?
         """, (parent_group,))
-        child_links = [row[0] for row in cursor.fetchall()]
+        child_links = [base_url + row[0] for row in cursor.fetchall()]
 
         # Add the result in the required format
         results.append({
@@ -269,17 +241,27 @@ def index():
     results = []
     query = ""
     mode = "mode1"  # Default mode is phrase search
+    suggestion = None  # Variable to hold spelling suggestions
 
     if request.method == "POST":
         query = request.form["query"]
         mode = request.form.get("mode", "mode1")  # Get mode from user input
-        results = fetch_ranked_results(query, mode)
+        suggestion = suggest_correction(query)
+        if suggestion:
+            # If there is a correction, re-run the search with the corrected query
+            query_to_use = suggestion
+        else:
+            query_to_use = query
+
+        results = fetch_ranked_results(query_to_use, mode)        
+        #results = fetch_ranked_results(query, mode)
 
     return render_template(
         "index.html",
         query=query,
         results=results,
-        mode=mode
+        mode=mode,
+        suggestion=suggestion
     )
 
 if __name__ == "__main__":

@@ -34,6 +34,9 @@ def clear_database(connection):
     cursor.execute("DROP TABLE IF EXISTS links")
     cursor.execute("DROP TABLE IF EXISTS child_links")
     cursor.execute("DROP TABLE IF EXISTS keywords_freq")
+    cursor.execute("DROP TABLE IF EXISTS body_positions")
+    cursor.execute("DROP TABLE IF EXISTS title_positions")
+
     connection.commit()
   except Error as e:
     print(f"The error '{e}' occurred")

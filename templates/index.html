@@ -67,11 +67,23 @@
         <input type="text" name="query" placeholder="Enter your query" required>
         <select name="mode">
             <option value="mode1" selected>Phrase Search</option>
-            <option value="mode2">Old Search</option>
         </select>
         <button type="submit">Search</button>
-    </form>
     
+    <!-- Radio buttons for spelling correction -->
+        <li><b>1. Spelling search check</b>
+        <label>
+            <input type="radio" name="apply_correction" value="no" 
+                   {% if apply_correction == "no" %}checked{% endif %}>
+            Turn off
+        </label>
+        <label>
+            <input type="radio" name="apply_correction" value="yes" 
+                   {% if apply_correction == "yes" %}checked{% endif %}>
+            Turn on
+        </label></li>
+    </form>
+
     {% if suggestion %}
     <div class="suggestion">
         Did you mean: <a href="?query={{ suggestion }}">{{ suggestion }}</a>?

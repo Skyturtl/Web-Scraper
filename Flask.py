@@ -1,11 +1,13 @@
 import sqlite3
 import math
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template,session
 import re
 from collections import Counter  
 from textblob import TextBlob  # Add this for spelling correction
 
 app = Flask(__name__)
+app.secret_key = "your_secret_key"  # Required for session management
+
 # Spelling correction helper function
 def suggest_correction(query):
     """Suggest spelling corrections for the given query."""
@@ -243,13 +245,21 @@ def index():
     mode = "mode1"  # Default mode is phrase search
     suggestion = None  # Variable to hold spelling suggestions
 
+    apply_correction = session.get("apply_correction", "yes")  # Default to "yes"
+
     if request.method == "POST":
         query = request.form["query"]
         mode = request.form.get("mode", "mode1")  # Get mode from user input
-        suggestion = suggest_correction(query)
-        if suggestion:
-            # If there is a correction, re-run the search with the corrected query
-            query_to_use = suggestion
+        apply_correction = request.form.get("apply_correction", "yes")
+        session["apply_correction"] = apply_correction
+    else:  # GET request
+        query = request.args.get("query", "")
+        mode = request.args.get("mode", "mode1")
+    
+    if query:
+        if apply_correction == "yes":
+            suggestion = suggest_correction(query)
+            query_to_use = suggestion if suggestion else query
         else:
             query_to_use = query
 
@@ -261,7 +271,8 @@ def index():
         query=query,
         results=results,
         mode=mode,
-        suggestion=suggestion
+        suggestion=suggestion,
+        apply_correction=apply_correction
     )
 
 if __name__ == "__main__":

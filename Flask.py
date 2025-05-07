@@ -4,9 +4,25 @@ from flask import Flask, request, render_template,session
 import re
 from collections import Counter  
 from textblob import TextBlob  # Add this for spelling correction
+import time  # Add this import at the top
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for session management
+
+# Helper function to find the longest matching stem in the database
+def find_stem_in_database(term, cursor):
+    """
+    Gradually reduce the term until a match is found in the database.
+    """
+    while len(term) > 1:  # Stop if the term length is 1 and still no match
+        # Query the database for the current term
+        cursor.execute("""
+            SELECT COUNT(*) FROM keywords_freq WHERE keyword LIKE ?
+        """, (f"{term}%",))  # Use wildcard to match stems
+        if cursor.fetchone()[0] > 0:  # If there is at least one match
+            return term  # Return the matched stem
+        term = term[:-1]  # Remove the last character and continue
+    return term  # Return the shortest form if no match is found
 
 # Spelling correction helper function
 def suggest_correction(query):
@@ -114,10 +130,12 @@ def calculate_tfidf(query, mode="mode1", title_boost_factor=3):
             condition = "LIKE"
             term_value = f"%{term}%"
 
+            matching_stem = find_stem_in_database(term, cursor)
+
             # Get document count containing the term
             cursor.execute(f"""
                 SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword {condition} ?
-            """, (term_value,))
+            """, (matching_stem ,))
             doc_count = cursor.fetchone()[0] or 1
 
             # Calculate IDF
@@ -126,7 +144,7 @@ def calculate_tfidf(query, mode="mode1", title_boost_factor=3):
             # Get term frequencies
             cursor.execute(f"""
                 SELECT parent_group, frequency FROM keywords_freq WHERE keyword {condition} ?
-            """, (term_value,))
+            """, (matching_stem ,))
             term_data = cursor.fetchall()
 
             for parent_group, frequency in term_data:
@@ -151,7 +169,7 @@ def calculate_tfidf(query, mode="mode1", title_boost_factor=3):
                     boost_applied = True  # Mark that boost was applied
 
                 # Store calculation details
-                calc_details.setdefault(parent_group, {}).setdefault(term, {
+                calc_details.setdefault(parent_group, {}).setdefault(matching_stem, {
                     'tf': round(tf, 4),
                     'idf': round(idf, 4),
                     'tfidf': round(tfidf, 4),
@@ -244,8 +262,8 @@ def index():
     query = ""
     mode = "mode1"  # Default mode is phrase search
     suggestion = None  # Variable to hold spelling suggestions
-
     apply_correction = session.get("apply_correction", "yes")  # Default to "yes"
+    search_time = None
 
     if request.method == "POST":
         query = request.form["query"]
@@ -257,13 +275,17 @@ def index():
         mode = request.args.get("mode", "mode1")
     
     if query:
+        start_time = time.time()
         if apply_correction == "yes":
             suggestion = suggest_correction(query)
             query_to_use = suggestion if suggestion else query
         else:
             query_to_use = query
 
-        results = fetch_ranked_results(query_to_use, mode)        
+        results = fetch_ranked_results(query_to_use, mode) 
+        end_time = time.time()  # Record end time
+        search_time = round(end_time - start_time, 2) 
+              
         #results = fetch_ranked_results(query, mode)
 
     return render_template(
@@ -272,7 +294,8 @@ def index():
         results=results,
         mode=mode,
         suggestion=suggestion,
-        apply_correction=apply_correction
+        apply_correction=apply_correction,
+        search_time=search_time
     )
 
 if __name__ == "__main__":

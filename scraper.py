@@ -17,26 +17,47 @@ indexed_pages = 0
 count = 0
 queue = deque()
 visited_links = set()  # Set to keep track of visited links
-inverted_index_body = defaultdict(lambda: defaultdict(int))  # Inverted index for body text
-inverted_index_title = defaultdict(lambda: defaultdict(int))  # Inverted index for titles
+inverted_index_body = defaultdict(lambda: defaultdict(list))  # Inverted index for body text
+inverted_index_title = defaultdict(lambda: defaultdict(list))  # Inverted index for titles
 
 # Preload stopwords and compile regex
 with open('stopwords.txt', 'r') as file:
   STOPWORDS = set(file.read().split())
 ALNUM_REGEX = re.compile(r'\w+')
 
-def token_stop_stem(text):
-  tokens = ALNUM_REGEX.findall(text)  # Faster tokenization
-  tokens = [token for token in tokens if token.lower() not in STOPWORDS]  # Remove stopwords
-  stemmer = PorterStemmer()  # Stem the tokens
-  return [stemmer.stem(token) for token in tokens]
+#def token_stop_stem(text):
+#  tokens = ALNUM_REGEX.findall(text)  # Faster tokenization
+#  tokens = [token for token in tokens if token.lower() not in STOPWORDS]  # Remove stopwords
+#  stemmer = PorterStemmer()  # Stem the tokens
+#  return [stemmer.stem(token) for token in tokens]
 
-def update_inverted_index(keywords, endpoint, inverted_index):
-  # Update the inverted index with the current page's keywords
-  for stem in keywords:
-    if stem not in inverted_index:
-      inverted_index[stem] = defaultdict(int)  # Create a new dictionary for this stem if it doesn't exist
-    inverted_index[stem][endpoint] += 1  # Increment the term frequency for this endpoint
+def token_stop_stem_with_positions(text):
+    """Tokenize, remove stopwords, apply stemming, and return positions."""
+    tokens = ALNUM_REGEX.findall(text)  # Faster tokenization
+    stemmer = PorterStemmer()
+    positions = defaultdict(list)  
+
+    for index, token in enumerate(tokens):
+        if token.lower() not in STOPWORDS:  # Remove stopwords
+            stemmed_token = stemmer.stem(token)
+            positions[stemmed_token].append(index + 1)  # 保存位置（位置從1開始）
+
+    return positions
+
+def update_inverted_index_with_positions(positions_dict, endpoint, inverted_index):
+    """Update the inverted index with positions."""
+    for stem, positions in positions_dict.items():
+        if stem not in inverted_index:
+            inverted_index[stem][endpoint] = []  
+        inverted_index[stem][endpoint].extend(positions)
+        inverted_index[stem][endpoint] = sorted(set(inverted_index[stem][endpoint]))
+
+#def update_inverted_index(keywords, endpoint, inverted_index):
+#  # Update the inverted index with the current page's keywords
+#  for stem in keywords:
+#    if stem not in inverted_index:
+#      inverted_index[stem] = defaultdict(int)  # Create a new dictionary for this stem if it doesn't exist
+#    inverted_index[stem][endpoint] += 1  # Increment the term frequency for this endpoint
 
 def get_inverted_index_body():
   return inverted_index_body  # Function to retrieve the inverted index for body text
@@ -99,8 +120,11 @@ async def spider_async(all_links, max_pages, last_modified_dates=None):
           # Process the page (similar to the original spider function)
           all_links[next_endpoint] = {}
           all_links[next_endpoint]['title'] = soup.title.string if soup.title else "No title"
-          title_keywords = token_stop_stem(all_links[next_endpoint]['title'])
-          all_links[next_endpoint]['stem_title'] = " ".join(title_keywords)
+          title_positions = token_stop_stem_with_positions(all_links[next_endpoint]['title'])
+          all_links[next_endpoint]['stem_title'] = " ".join(title_positions.keys())
+          
+          #title_keywords = token_stop_stem(all_links[next_endpoint]['title'])
+          #all_links[next_endpoint]['stem_title'] = " ".join(title_keywords)
           all_links[next_endpoint]['url'] = url
           all_links[next_endpoint]['last_mod_date'] = last_modified_date
           all_links[next_endpoint]['size'] = len(page_content)
@@ -108,12 +132,15 @@ async def spider_async(all_links, max_pages, last_modified_dates=None):
             all_links[next_endpoint]['parent'] = []
           if parent_endpoint != "":
             all_links[next_endpoint]['parent'].append(parent_endpoint)
+          body_positions = token_stop_stem_with_positions(soup.get_text())
+          all_links[next_endpoint]['keywords'] = list(body_positions.keys())
+          #body_keywords = token_stop_stem(soup.get_text())
+          #all_links[next_endpoint]['keywords'] = body_keywords
+          update_inverted_index_with_positions(body_positions, next_endpoint, inverted_index_body)
+          update_inverted_index_with_positions(title_positions, next_endpoint, inverted_index_title)
 
-          body_keywords = token_stop_stem(soup.get_text())
-          all_links[next_endpoint]['keywords'] = body_keywords
-
-          update_inverted_index(body_keywords, next_endpoint, inverted_index_body)
-          update_inverted_index(title_keywords, next_endpoint, inverted_index_title)
+          #update_inverted_index(body_keywords, next_endpoint, inverted_index_body)
+          #update_inverted_index(title_keywords, next_endpoint, inverted_index_title)
           
           all_links[next_endpoint]['links'] = fix_links([link['href'] for link in soup.find_all('a', href=True)], next_endpoint)
           all_links[next_endpoint]['index'] = indexed_pages + 1

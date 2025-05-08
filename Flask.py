@@ -11,14 +11,11 @@ app.secret_key = "your_secret_key"  # Required for session management
 
 # Helper function to find the longest matching stem in the database
 def find_stem_in_database(term, cursor):
-    """
-    Gradually reduce the term until a match is found in the database.
-    """
     while len(term) > 1:  # Stop if the term length is 1 and still no match
         # Query the database for the current term
         cursor.execute("""
-            SELECT COUNT(*) FROM keywords_freq WHERE keyword LIKE ?
-        """, (f"{term}%",))  # Use wildcard to match stems
+            SELECT COUNT(*) FROM keywords_freq WHERE keyword LIKE  ?
+        """, (term,))   # Use wildcard to match stems
         if cursor.fetchone()[0] > 0:  # If there is at least one match
             return term  # Return the matched stem
         term = term[:-1]  # Remove the last character and continue
@@ -33,13 +30,17 @@ def suggest_correction(query):
 
 # Helper function to extract phrases and terms
 def extract_phrases_and_terms(query):
-    # Extract phrases in quotes and individual terms
     phrases = re.findall(r'"(.*?)"', query)
-    terms = re.findall(r'\b\w+\b', query)
-    terms = [term for term in terms if term not in phrases]  # Exclude phrases from terms
+    remaining_query = re.sub(r'"(.*?)"', '', query).strip()
+    terms = re.findall(r'\b\w+\b', remaining_query)
+    phrase_terms = set()
+    for phrase in phrases:
+        terms_in_phrase = re.findall(r'\b\w+\b', phrase)
+        phrase_terms.update(terms_in_phrase)
+    terms = [term for term in terms if term not in phrase_terms]
     return phrases, terms
 
-# **Cosine Similarity Function** (Newly implemented)
+# Cosine Similarity Function
 def calculate_cosine_similarity(query_vector, doc_vector):
     """Calculate cosine similarity between query and document vectors."""
     # Compute dot product
@@ -53,135 +54,151 @@ def calculate_cosine_similarity(query_vector, doc_vector):
     return dot_product / (query_magnitude * doc_magnitude)
 
 
-# Calculate TF-IDF function (with mode switching)
-def calculate_tfidf(query, mode="mode1", title_boost_factor=3):
+# Calculate TF-IDF function 
+def calculate_tfidf(query,title_boost_factor=3):
     conn = sqlite3.connect("scraper.db")
     cursor = conn.cursor()
-
-    # Extract phrases and terms
     phrases, query_terms = extract_phrases_and_terms(query)
-
     cursor.execute("SELECT COUNT(*) FROM links")
     total_documents = int(cursor.fetchone()[0])
 
     doc_scores = {}
     total_freqs = {}
     calc_details = {}
-    query_vector = Counter(query_terms)  # For cosine similarity
+    query_vector = Counter(phrases+query_terms)  # For cosine similarity
+    phrase_docs_list = []
 
-    # Mode 1: Phrase Search Support
-    if mode == "mode1":
-        # Process phrases
-        for phrase in phrases:
-            # Check if the phrase appears in the body positions
+    # Process phrases
+    for phrase in phrases:
+        phrase_terms = phrase.split()
+        phrase_docs = set()
+        total_occurrences = Counter()
+
+        # Check both body and title positions
+        for table in ['body_positions', 'title_positions']:
+            # Get positions for each term in the phrase
+            term_positions = {}
+            for term in phrase_terms:
+                cursor.execute(f"""
+                    SELECT parent_group, positions FROM {table} WHERE word = ?
+                """, (term,))
+                term_positions[term] = {}
+                for parent_group, positions in cursor.fetchall():
+                    term_positions[term][parent_group] = list(map(int, positions.split(',')))
+
+            # Find matching documents with consecutive positions
+            for parent_group in set.intersection(*[set(term_positions[t].keys()) for t in phrase_terms]):
+                all_positions = [term_positions[t][parent_group] for t in phrase_terms]
+                
+                # Check for consecutive sequences
+                occurrences = 0
+                for first_pos in all_positions[0]:
+                    consecutive = True
+                    for i in range(1, len(phrase_terms)):
+                        if (first_pos + i) not in all_positions[i]:
+                            consecutive = False
+                            break
+                    if consecutive:
+                        occurrences += 1
+                
+                if occurrences > 0:
+                    phrase_docs.add(parent_group)
+                    total_occurrences[parent_group] += occurrences
+
+        # Calculate TF-IDF for matching documents
+        doc_count = len(phrase_docs) or 1
+        idf = math.log(total_documents / doc_count)
+
+        for parent_group in phrase_docs:
+            # Get total terms in document
             cursor.execute("""
-                SELECT parent_group, positions FROM body_positions WHERE word = ?
-            """, (phrase,))
-            body_matches = cursor.fetchall()
+                SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
+            """, (parent_group,))
+            total_terms = cursor.fetchone()[0] or 1
 
-            # Check if the phrase appears in the title positions
+            # Calculate TF and TF-IDF
+            tf = total_occurrences[parent_group] / total_terms
+            tfidf = tf * idf
+
+            # Check if phrase appears in title
+            boost_applied = False
             cursor.execute("""
-                SELECT parent_group, positions FROM title_positions WHERE word = ?
-            """, (phrase,))
-            title_matches = cursor.fetchall()
+                SELECT stem_title FROM links WHERE id = ?
+            """, (parent_group,))
+            title = cursor.fetchone()
+            if title and all(t in title[0].lower() for t in phrase_terms):
+                tfidf *= title_boost_factor
+                boost_applied = True
 
-            # Combine matches and calculate TF-IDF for phrases
-            matches = body_matches + title_matches
-            doc_count = len(matches) or 1
-            idf = math.log(total_documents / doc_count)
-
-            for parent_group, positions in matches:
-                # Calculate TF
-                position_list = list(map(int, positions.split(',')))
-                is_consecutive = all(
-                    position_list[i] + 1 == position_list[i + 1] for i in range(len(position_list) - 1)
-                )
-                if not is_consecutive:  # Skip non-consecutive matches
-                    continue
-
-                tf = len(position_list) / total_documents
-                tfidf = tf * idf
-
-                # Boost if found in the title
-                boost_applied = False
-                cursor.execute("""
-                    SELECT stem_title FROM links WHERE id = ?
-                """, (parent_group,))
-                title = cursor.fetchone()
-                if title and phrase in title[0].lower():
-                    tfidf *= title_boost_factor
-                    boost_applied = True
-
-                # Store calculation details
-                calc_details.setdefault(parent_group, {}).setdefault(phrase, {
-                    'tf': round(tf, 4),
-                    'idf': round(idf, 4),
-                    'tfidf': round(tfidf, 4),
-                    'doc_count': doc_count,
-                    'boost_applied': boost_applied
-                })
-
-                # Update scores
-                doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
-                total_freqs[parent_group] = total_freqs.get(parent_group, 0) + 1
+            # Update scores and details
+            doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
+            calc_details.setdefault(parent_group, {}).setdefault(phrase, {
+                'tf': round(tf, 4),
+                'idf': round(idf, 4),
+                'tfidf': round(tfidf, 4),
+                'doc_count': doc_count,
+                'occurrences': total_occurrences[parent_group],
+                'boost_applied': boost_applied
+            })
+            
 
         # Process individual terms
-        for term in query_terms:
-            condition = "LIKE"
-            term_value = f"%{term}%"
+    for term in query_terms:
+        #condition = "LIKE"
+        #term_value = f"%{term}%"
+        original_term = term
+        matching_stem = find_stem_in_database(term, cursor)
 
-            matching_stem = find_stem_in_database(term, cursor)
+        # Get document count containing the term
+        cursor.execute("""
+        SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword = ?
+        """, (matching_stem,))
+        doc_count = cursor.fetchone()[0] or 1
 
-            # Get document count containing the term
+        # Calculate IDF
+        idf = math.log(total_documents / doc_count) if doc_count else 0
+
+        # Get term frequencies
+        cursor.execute("""
+        SELECT parent_group, frequency FROM keywords_freq WHERE keyword = ?
+        """, (matching_stem,))
+        term_data = cursor.fetchall()
+
+        for parent_group, frequency in term_data:
+            # Get total terms in document
+            cursor.execute("""
+                SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
+            """, (parent_group,))
+            total_terms = cursor.fetchone()[0] or 1
+
+            # Calculate TF and TF-IDF
+            tf = frequency / total_terms
+            tfidf = tf * idf
+
+            # Check if the term is in the title for Title Match Boosting
             cursor.execute(f"""
-                SELECT COUNT(DISTINCT parent_group) FROM keywords_freq WHERE keyword {condition} ?
-            """, (matching_stem ,))
-            doc_count = cursor.fetchone()[0] or 1
+                SELECT stem_title FROM links WHERE id = ?
+            """, (parent_group,))
+            title = cursor.fetchone()
+            boost_applied = False
+            if title and term in title[0].lower():
+                tfidf *= title_boost_factor  # Apply the boost factor
+                boost_applied = True  # Mark that boost was applied
 
-            # Calculate IDF
-            idf = math.log(total_documents / doc_count) if doc_count else 0
+            # Store calculation details
+            calc_details.setdefault(parent_group, {}).setdefault(matching_stem, {
+                'tf': round(tf, 4),
+                'idf': round(idf, 4),
+                'tfidf': round(tfidf, 4),
+                'doc_count': doc_count,
+                'total_terms': total_terms,
+                'term_freq': frequency,
+                'boost_applied': boost_applied  # Add boost visibility
+            })
 
-            # Get term frequencies
-            cursor.execute(f"""
-                SELECT parent_group, frequency FROM keywords_freq WHERE keyword {condition} ?
-            """, (matching_stem ,))
-            term_data = cursor.fetchall()
-
-            for parent_group, frequency in term_data:
-                # Get total terms in document
-                cursor.execute("""
-                    SELECT SUM(frequency) FROM keywords_freq WHERE parent_group = ?
-                """, (parent_group,))
-                total_terms = cursor.fetchone()[0] or 1
-
-                # Calculate TF and TF-IDF
-                tf = frequency / total_terms
-                tfidf = tf * idf
-
-                # Check if the term is in the title for Title Match Boosting
-                cursor.execute(f"""
-                    SELECT stem_title FROM links WHERE id = ?
-                """, (parent_group,))
-                title = cursor.fetchone()
-                boost_applied = False
-                if title and term in title[0].lower():
-                    tfidf *= title_boost_factor  # Apply the boost factor
-                    boost_applied = True  # Mark that boost was applied
-
-                # Store calculation details
-                calc_details.setdefault(parent_group, {}).setdefault(matching_stem, {
-                    'tf': round(tf, 4),
-                    'idf': round(idf, 4),
-                    'tfidf': round(tfidf, 4),
-                    'doc_count': doc_count,
-                    'total_terms': total_terms,
-                    'term_freq': frequency,
-                    'boost_applied': boost_applied  # Add boost visibility
-                })
-
-                # Update scores and frequencies
-                doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
-                total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
+            # Update scores and frequencies
+            doc_scores[parent_group] = doc_scores.get(parent_group, 0) + tfidf
+            total_freqs[parent_group] = total_freqs.get(parent_group, 0) + frequency
 
     # Normalize scores
     if query_terms or phrases:
@@ -193,10 +210,9 @@ def calculate_tfidf(query, mode="mode1", title_boost_factor=3):
     return doc_scores, total_freqs, calc_details, total_documents
 
 # Fetch ranked results
-def fetch_ranked_results(query, mode="mode1"):
-    doc_scores, total_freqs, calc_details, total_docs = calculate_tfidf(query, mode)
+def fetch_ranked_results(query):
+    doc_scores, total_freqs, calc_details, total_docs = calculate_tfidf(query)
     ranked_docs = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)
-
     results = []
     conn = sqlite3.connect("scraper.db")
     cursor = conn.cursor()
@@ -260,19 +276,16 @@ def fetch_ranked_results(query, mode="mode1"):
 def index():
     results = []
     query = ""
-    mode = "mode1"  # Default mode is phrase search
     suggestion = None  # Variable to hold spelling suggestions
     apply_correction = session.get("apply_correction", "yes")  # Default to "yes"
     search_time = None
 
     if request.method == "POST":
         query = request.form["query"]
-        mode = request.form.get("mode", "mode1")  # Get mode from user input
         apply_correction = request.form.get("apply_correction", "yes")
         session["apply_correction"] = apply_correction
     else:  # GET request
         query = request.args.get("query", "")
-        mode = request.args.get("mode", "mode1")
     
     if query:
         start_time = time.time()
@@ -282,7 +295,7 @@ def index():
         else:
             query_to_use = query
 
-        results = fetch_ranked_results(query_to_use, mode) 
+        results = fetch_ranked_results(query_to_use) 
         end_time = time.time()  # Record end time
         search_time = round(end_time - start_time, 2) 
               
@@ -292,7 +305,6 @@ def index():
         "index.html",
         query=query,
         results=results,
-        mode=mode,
         suggestion=suggestion,
         apply_correction=apply_correction,
         search_time=search_time

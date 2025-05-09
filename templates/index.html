@@ -69,19 +69,19 @@
             <option value="mode1" selected>Phrase Search</option>
         </select>
         <button type="submit">Search</button>
-    
-    <!-- Radio buttons for spelling correction -->
+
+        <!-- Radio buttons for spelling correction -->
         <li><b>1. Spelling search check</b>
-        <label>
-            <input type="radio" name="apply_correction" value="no" 
-                   {% if apply_correction == "no" %}checked{% endif %}>
-            Turn off
-        </label>
-        <label>
-            <input type="radio" name="apply_correction" value="yes" 
-                   {% if apply_correction == "yes" %}checked{% endif %}>
-            Turn on
-        </label></li>
+            <label>
+                <input type="radio" name="apply_correction" value="no"
+                    {% if apply_correction == "no" %}checked{% endif %}>
+                Turn off
+            </label>
+            <label>
+                <input type="radio" name="apply_correction" value="yes"
+                    {% if apply_correction == "yes" %}checked{% endif %}>
+                Turn on
+            </label></li>
     </form>
 
     {% if suggestion %}
@@ -121,7 +121,8 @@
             <strong>Score (Rank):</strong> {{ result['score'] }} ({{ result['rank'] }})<br>
             <strong>Title:</strong> <a
                 href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['title'] }}</a><br>
-            <strong>URL:</strong> {{ result['page_detail']['url'] }}<br>
+            <strong>URL:</strong> <a
+                href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['url'] }}</a><br>
             <strong>Last Modified:</strong> {{ result['page_detail']['last_modified'] }}<br>
             <strong>Size:</strong> {{ result['page_detail']['size'] }} bytes<br>
             <strong>Keywords:</strong> {{ result['page_detail']['keywords'] }}<br>

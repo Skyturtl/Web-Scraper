@@ -1,6 +1,6 @@
 from database import create_connection, clear_database, create_table, add_links_batch, add_keyword_freq_batch, add_child_links_batch,add_index_body_positions_batch,add_index_title_positions_batch
-
 from scraper import run_async_spider,get_inverted_index_body, get_inverted_index_title
+from collections import defaultdict
 
 # Database setup
 #update Added parent links
@@ -73,6 +73,10 @@ run_async_spider("testpage.htm", all_links, 300)
 
 inverted_index_body = get_inverted_index_body()
 inverted_index_title = get_inverted_index_title()
+title_counts = defaultdict(dict)
+for word, pages in inverted_index_title.items():
+    for endpoint, positions in pages.items():
+        title_counts[endpoint][word] = len(positions)
 
 # Create a list of tuples for batch insertion
 links_batch = []
@@ -106,9 +110,23 @@ for endpoint, data in all_links.items():
   stem_title = data['stem_title'].replace("'", "''")
   parent_links = ";".join(data['parent'])
   links_batch.append((parent_group, title, stem_title, data['url'], data['last_mod_date'], data['size'], parent_links))
-  keyword_counts = {keyword: len(data['keywords'][keyword]) for keyword in data['keywords']}
-  keyword_freq_batch.extend((keyword, parent_group, count) for keyword, count in keyword_counts.items())
-
+  #keyword_counts = {keyword: len(data['keywords'][keyword]) for keyword in data['keywords']}
+  #keyword_freq_batch.extend((keyword, parent_group, count) for keyword, count in keyword_counts.items())
+  body_counts = {kw: len(positions) for kw, positions in data['keywords'].items()}
+  title_counts_for_endpoint = title_counts.get(endpoint, {})
+    
+  # Merge counts
+  combined_counts = defaultdict(int)
+  for kw, cnt in body_counts.items():
+      combined_counts[kw] += cnt
+  for kw, cnt in title_counts_for_endpoint.items():
+      combined_counts[kw] += cnt
+    
+  # Add to keyword batch
+  keyword_freq_batch.extend(
+        (kw, parent_group, cnt) 
+        for kw, cnt in combined_counts.items()
+  )
 add_links_batch(connection, links_batch) 
 
 for endpoint, data in all_links.items():

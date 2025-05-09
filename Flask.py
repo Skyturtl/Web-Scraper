@@ -3,8 +3,8 @@ import math
 from flask import Flask, request, render_template,session
 import re
 from collections import Counter  
-from textblob import TextBlob  # Add this for spelling correction
-import time  # Add this import at the top
+from textblob import TextBlob
+import time
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for session management
@@ -66,7 +66,7 @@ def calculate_tfidf(query,title_boost_factor=3):
     total_freqs = {}
     calc_details = {}
     query_vector = Counter(phrases+query_terms)  # For cosine similarity
-    phrase_docs_list = []
+    # phrase_docs_list = []
 
     # Process phrases
     for phrase in phrases:

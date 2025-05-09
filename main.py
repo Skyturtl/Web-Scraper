@@ -29,10 +29,12 @@ CREATE TABLE IF NOT EXISTS keywords_freq (
 
 create_child_links_table = """
 CREATE TABLE IF NOT EXISTS child_links (
-  child_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER,
   parent_group INTEGER,
   url TEXT NOT NULL,
   FOREIGN KEY (parent_group) REFERENCES links (id)
+  ForeIGN KEY (child_id) REFERENCES links (id)
 );
 """
 
@@ -104,13 +106,21 @@ for endpoint, data in all_links.items():
   stem_title = data['stem_title'].replace("'", "''")
   parent_links = ";".join(data['parent'])
   links_batch.append((parent_group, title, stem_title, data['url'], data['last_mod_date'], data['size'], parent_links))
-
-  child_links_batch.extend((parent_group, link) for link in data['links'])
-
-  keyword_counts = {keyword: data['keywords'].count(keyword) for keyword in set(data['keywords'])}
+  keyword_counts = {keyword: len(data['keywords'][keyword]) for keyword in data['keywords']}
   keyword_freq_batch.extend((keyword, parent_group, count) for keyword, count in keyword_counts.items())
 
 add_links_batch(connection, links_batch) 
+
+for endpoint, data in all_links.items():
+  if not data:
+    continue
+
+  parent_group = data['index']
+  for child_link in data['links']:
+    if child_link in all_links:
+      child_id = all_links[child_link]['index']
+      child_links_batch.append((child_id, parent_group, child_link))
+      
 add_child_links_batch(connection, child_links_batch)
 add_keyword_freq_batch(connection, keyword_freq_batch)   
 # Insert the batches into the database

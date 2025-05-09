@@ -74,8 +74,8 @@ def add_child_links_batch(connection, child_links):
   try:
     cursor.executemany(
       """
-      INSERT INTO child_links (parent_group, url) 
-      VALUES (?, ?)
+      INSERT INTO child_links (child_id, parent_group, url) 
+      VALUES (?, ?, ?)
       """, 
       child_links
     )

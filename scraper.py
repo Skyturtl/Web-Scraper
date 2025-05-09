@@ -133,7 +133,7 @@ async def spider_async(all_links, max_pages, last_modified_dates=None):
           if parent_endpoint != "":
             all_links[next_endpoint]['parent'].append(parent_endpoint)
           body_positions = token_stop_stem_with_positions(soup.get_text())
-          all_links[next_endpoint]['keywords'] = list(body_positions.keys())
+          all_links[next_endpoint]['keywords'] = body_positions
           #body_keywords = token_stop_stem(soup.get_text())
           #all_links[next_endpoint]['keywords'] = body_keywords
           update_inverted_index_with_positions(body_positions, next_endpoint, inverted_index_body)

@@ -34,7 +34,7 @@ def fetch_page_data(connection):
 
 # Generate the spider_result.txt file
 def generate_spider_result(links_data, keywords_data, child_links_data):
-    with open("spider_result.txt", "w") as file:
+    with open("spider_result.txt", "w", encoding="utf-8") as file:
         for link in links_data:
             page_id, title, url, last_mod_date, size = link
             

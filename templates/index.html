@@ -108,6 +108,27 @@
         .query-history ul::-webkit-scrollbar-track {
             background-color: #f1f1f1;
         }
+
+        /* Scroll Button Styles */
+        .scroll-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #2575fc;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .scroll-button:hover {
+            background-color: #1e63e9;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 
@@ -119,7 +140,7 @@
         <!-- Radio buttons for spelling correction -->
         <li><b>Spelling search check</b>
             <label>
-                <input type="radio" name="apply_correction" value="no" 
+                <input type="radio" name="apply_correction" value="no"
                     {% if apply_correction == "no" %}checked{% endif %}>
                 Turn off
             </label>
@@ -186,12 +207,16 @@
             &nbsp;&nbsp;- Cosine Similarity Score: {{ result['cosine_similarity'] }}<br>-->
             <!-- End of Cosine Similarity Details -->
 
-            <strong>Keyword Appearances:</strong> {{ result['keyword_count'] }}<br>
+            <!--<strong>Keyword Appearances:</strong> {{ result['keyword_count'] }}<br>-->
             <div style="display: flex; flex-direction: row;">
                 <div style="flex: 1; padding: 10px; border-right: 1px solid #ccc;">
-                    <strong>Score (Rank):</strong> {{ result['score'] }} ({{ result['rank'] }})<br>
+                    <strong>Score (Rank):</strong>
+                    <hr>
+                    {{ result['score'] }} ({{ result['rank'] }})<br>
                 </div>
                 <div style="flex: 2; padding: 10px;">
+                    <strong>Page details:</strong>
+                    <hr>
                     <strong>Title:</strong> <a
                         href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['title'] }}</a><br>
                     <strong>URL:</strong> <a
@@ -223,6 +248,10 @@
             </div>
             {% endfor %}
     </ul>
+    <!-- "Go to Top" and "Go to Bottom" Buttons -->
+    <!-- Scroll Button -->
+    <button class="scroll-button" id="scrollButton" onclick="handleScroll()">Go to Bottom</button>
+
     <script>
         // JavaScript for collapsible functionality
         const collapsibles = document.querySelectorAll(".collapsible");
@@ -237,6 +266,40 @@
                 }
             });
         });
+        const scrollButton = document.getElementById('scrollButton');
+
+        // Function to scroll to the top or bottom depending on the current scroll position
+        function handleScroll() {
+            if (window.scrollY > 0) {
+                // If the user is not at the top, scroll to the top
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            } else {
+                // If the user is at the top, scroll to the bottom
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Function to update the button text based on scroll position
+        function updateButton() {
+            if (window.scrollY > 0) {
+                scrollButton.textContent = 'Go to Top';
+            } else {
+                scrollButton.textContent = 'Go to Bottom';
+            }
+        }
+
+        // Add an event listener to update the button text whenever the user scrolls
+        window.addEventListener('scroll', updateButton);
+
+        // Initialize the button text on page load
+        updateButton();
+        
     </script>
 </body>
 

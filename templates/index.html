@@ -152,6 +152,9 @@
     </form>
     {% if results %}
     <div>
+        <p style="font-size: 14px; color: #444; margin-top: 5px;">
+            Search query: <strong>{{ query }}</strong>
+        </p>
         <p style="font-size: 14px; color: #666;">
             About {{ results_count }} results ({{ search_time }} seconds)
         </p>
@@ -166,14 +169,14 @@
 
     <!-- Query History Section -->
     <div class="query-history">
-        <button type="button" class="collapsible">Query History (Click to Expand/Collapse)</button>
+        <button type="button" class="collapsible">Query History</button>
         <div class="content">
             <h3>Query History</h3>
             {% if query_history %}
             <p><strong>Total Searches:</strong> {{ query_history|length }}</p>
             <ul>
                 {% for query_item in query_history %}
-                <strong>Order:</strong> {{ loop.index }} <br>
+                <strong>No:</strong> {{ loop.index }} <br>
                 <strong>Query:</strong>
                 <a href="?query={{ query_item.query }}">{{ query_item.query }}</a> <br>
                 <strong>Date:</strong> {{ query_item.timestamp }} <br>
@@ -220,6 +223,11 @@
                     <strong>Score (Rank):</strong>
                     <hr>
                     {{ result['score'] }} ({{ result['rank'] }})<br>
+                    <!-- New "Find Similar Pages" button -->
+                    <form method="POST" action="/index.html">
+                        <input type="hidden" name="keywords" value="{{ result['page_detail']['keywords'] }}">
+                        <button type="submit" style="margin-top: 10px;">Find Similar Pages</button>
+                    </form>
                 </div>
                 <div style="flex: 2; padding: 10px;">
                     <strong>Page details:</strong>

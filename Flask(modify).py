@@ -268,6 +268,9 @@ def index():
     apply_correction = session.get("apply_correction", "yes")  # Default to "yes"
     search_time = None
 
+    if "query_history" not in session:
+        session["query_history"] = []
+
     if request.method == "POST":
         query = request.form["query"]
         apply_correction = request.form.get("apply_correction", "yes")
@@ -286,7 +289,14 @@ def index():
         results = fetch_ranked_results(query_to_use) 
         end_time = time.time()  # Record end time
         search_time = round(end_time - start_time, 2) 
-              
+        
+        query_item = {
+            "query": query,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        session["query_history"].append(query_item)
+        session.modified = True               
+        
         #results = fetch_ranked_results(query, mode)
 
     return render_template(
@@ -295,7 +305,8 @@ def index():
         results=results,
         suggestion=suggestion,
         apply_correction=apply_correction,
-        search_time=search_time
+        search_time=search_time,
+        query_history=session.get("query_history", []),
     )
 
 if __name__ == "__main__":

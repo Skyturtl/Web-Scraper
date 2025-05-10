@@ -28,14 +28,18 @@
         button {
             padding: 10px 15px;
             font-size: 16px;
-            background-color: #007BFF;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
             color: white;
             border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background: linear-gradient(135deg, #5c0fb7, #1e63e9);
+            transform: translateY(-2px);
         }
 
         ul {
@@ -58,6 +62,52 @@
         a:hover {
             text-decoration: underline;
         }
+
+        /* Collapsible section styles */
+        .collapsible {
+            background-color: #2575fc;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            border-radius: 5px;
+            text-align: left;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .collapsible:hover {
+            background-color: #1e63e9;
+        }
+
+        .content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            background-color: #f9f9f9;
+        }
+
+        /* Scrollable query history */
+        .query-history ul {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-left: 20px;
+            list-style-type: disc;
+        }
+
+        .query-history ul::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .query-history ul::-webkit-scrollbar-thumb {
+            background-color: #2575fc;
+            border-radius: 4px;
+        }
+
+        .query-history ul::-webkit-scrollbar-track {
+            background-color: #f1f1f1;
+        }
     </style>
 </head>
 
@@ -67,9 +117,9 @@
         <input type="text" name="query" placeholder="Enter your query" required>
         <button type="submit">Search</button>
         <!-- Radio buttons for spelling correction -->
-        <li><b>1. Spelling search check</b>
+        <li><b>Spelling search check</b>
             <label>
-                <input type="radio" name="apply_correction" value="no"
+                <input type="radio" name="apply_correction" value="no" 
                     {% if apply_correction == "no" %}checked{% endif %}>
                 Turn off
             </label>
@@ -86,11 +136,33 @@
     </div>
     {% endif %}
 
+    <!-- Query History Section -->
+    <div class="query-history">
+        <button type="button" class="collapsible">Query History (Click to Expand/Collapse)</button>
+        <div class="content">
+            <h3>Query History</h3>
+            {% if query_history %}
+            <p><strong>Total Searches:</strong> {{ query_history|length }}</p>
+            <ul>
+                {% for query_item in query_history %}
+                <strong>Order:</strong> {{ loop.index }} <br>
+                <strong>Query:</strong>
+                <a href="?query={{ query_item.query }}">{{ query_item.query }}</a> <br>
+                <strong>Date:</strong> {{ query_item.timestamp }} <br>
+                <hr>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No query history available.</p>
+            {% endif %}
+        </div>
+    </div>
+
     <ul>
         {% for result in results %}
         <li>
             <!-- Add this section below the existing fields -->
-            <strong>TF-IDF Calculation Details:</strong><br>
+            <!--<strong>TF-IDF Calculation Details:</strong><br>
             {% for term, details in result['calc_details'].items() %}
             • Term: {{ term }}<br>
             &nbsp;&nbsp;- Document Frequency: {{ details.doc_count }}/{{ result.total_docs }}<br>
@@ -105,12 +177,13 @@
             {% endif %}
 
             {% endfor %}
+            -->
 
             <!-- Added: Cosine Similarity Details -->
-            <strong>Cosine Similarity Details:</strong><br>
+            <!--<strong>Cosine Similarity Details:</strong><br>
             &nbsp;&nbsp;- Query Vector: {{ result['query_vector'] }}<br>
             &nbsp;&nbsp;- Document Vector: {{ result['doc_vector'] }}<br>
-            &nbsp;&nbsp;- Cosine Similarity Score: {{ result['cosine_similarity'] }}<br>
+            &nbsp;&nbsp;- Cosine Similarity Score: {{ result['cosine_similarity'] }}<br>-->
             <!-- End of Cosine Similarity Details -->
 
             <strong>Keyword Appearances:</strong> {{ result['keyword_count'] }}<br>
@@ -119,12 +192,14 @@
                     <strong>Score (Rank):</strong> {{ result['score'] }} ({{ result['rank'] }})<br>
                 </div>
                 <div style="flex: 2; padding: 10px;">
-                    <strong>Title:</strong> <a href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['title'] }}</a><br>
-                    <strong>URL:</strong> <a href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['url'] }}</a><br>
+                    <strong>Title:</strong> <a
+                        href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['title'] }}</a><br>
+                    <strong>URL:</strong> <a
+                        href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['url'] }}</a><br>
                     <strong>Last Modified (Size):</strong> {{ result['page_detail']['last_modified'] }}
                     ({{ result['page_detail']['size'] }} bytes)<br>
                     <strong>Keywords:</strong> {{ result['page_detail']['keywords'] }}<br>
-            
+
                     <strong>Parent Links:</strong>
                     <ul>
                         {% set parent_links = result['page_detail']['parent_links'] %}
@@ -134,7 +209,7 @@
                         {% endfor %}
                     </ul>
                     (Showing {{ displayed_parents|length }} of {{ parent_links|length }} parent links)<br>
-            
+
                     <strong>Child Links:</strong>
                     <ul>
                         {% set child_links = result['page_detail']['child_links'] %}
@@ -146,8 +221,23 @@
                     (Showing {{ displayed_children|length }} of {{ child_links|length }} child links)<br>
                 </div>
             </div>
-        {% endfor %}
+            {% endfor %}
     </ul>
+    <script>
+        // JavaScript for collapsible functionality
+        const collapsibles = document.querySelectorAll(".collapsible");
+        collapsibles.forEach(button => {
+            button.addEventListener("click", () => {
+                button.classList.toggle("active");
+                const content = button.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

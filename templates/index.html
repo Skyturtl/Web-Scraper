@@ -129,6 +129,37 @@
             background-color: #1e63e9;
             transform: translateY(-2px);
         }
+
+        .bookmarks-section .collapsible {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #333;
+        }
+
+        .bookmarks-section .collapsible:hover {
+            background: linear-gradient(135deg, #ffaa00, #ff8000);
+        }
+
+        .bookmark-btn {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #333;
+            margin-top: 8px;
+            padding: 6px 12px;
+        }
+
+        .bookmark-btn.saved {
+            background: linear-gradient(135deg, #ffaa00, #ff8000);
+            color: white;
+        }
+
+        #bookmarksList li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background: #fff;
+            border: 1px solid #eee;
+        }
     </style>
 </head>
 
@@ -138,7 +169,7 @@
         <input type="text" name="query" placeholder="Enter your query" required>
         <button type="submit">Search</button>
         <!-- Radio buttons for spelling correction -->
-        <li><b>Spelling search check</b>
+        <div><b>Spelling search check</b>
             <label>
                 <input type="radio" name="apply_correction" value="no"
                     {% if apply_correction == "no" %}checked{% endif %}>
@@ -148,7 +179,7 @@
                 <input type="radio" name="apply_correction" value="yes"
                     {% if apply_correction == "yes" %}checked{% endif %}>
                 Turn on (Doesn't support "exact phrase")
-            </label></li>
+            </label></div>
     </form>
 
 
@@ -168,6 +199,7 @@
         Did you mean: <a href="?query={{ suggestion }}">{{ suggestion }}</a>?
     </div>
     {% endif %}
+    <hr>
 
     <div
         style="position: fixed; bottom: 80px; right: 20px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 1000;">
@@ -253,6 +285,84 @@
             {% endif %}
         </div>
     </div>
+    <hr>
+
+    <div class="bookmarks-section">
+        <button type="button" class="collapsible">Saved Bookmarks</button>
+        <div class="content">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Saved Bookmarks</h3>
+                <button id="clearBookmarksBtn" style="margin-left: 10px; padding: 5px 10px; font-size: 14px;"
+                    onclick="clearAllBookmarks()">
+                    Clear All
+                </button>
+            </div>
+            <ul id="bookmarksList">
+            </ul>
+        </div>
+    </div>
+    <script>
+        function toggleBookmark(btn) {
+            const bookmark = {
+                title: btn.dataset.title,
+                url: btn.dataset.url,
+                timestamp: new Date().toLocaleString()
+            };
+
+            let bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+
+            const existingIndex = bookmarks.findIndex(b => b.url === bookmark.url);
+
+            if (existingIndex > -1) {
+                bookmarks.splice(existingIndex, 1);
+                btn.classList.remove('saved');
+            } else {
+                bookmarks.push(bookmark);
+                btn.classList.add('saved');
+            }
+
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+            updateBookmarksList();
+        }
+
+        function updateBookmarksList() {
+            const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+            const list = document.getElementById('bookmarksList');
+
+            list.innerHTML = bookmarks.map((b, index) => `
+                <li>
+                    <div>
+                        <a href="${b.url}" target="_blank">${b.title}</a><br>
+                    </div>
+                    <button onclick="removeBookmark(${index})">×</button>
+                </li>
+            `).join('');
+        }
+
+        function removeBookmark(index) {
+            let bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+            bookmarks.splice(index, 1);
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+            updateBookmarksList();
+        }
+
+        function clearAllBookmarks() {
+            if (confirm('Clear all bookmarks?')) {
+                localStorage.removeItem('bookmarks');
+                updateBookmarksList();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateBookmarksList();
+            document.querySelectorAll('.bookmark-btn').forEach(btn => {
+                const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+                if (bookmarks.some(b => b.url === btn.dataset.url)) {
+                    btn.classList.add('saved');
+                }
+            });
+        });
+    </script>
 
     <ul>
         {% for result in results %}
@@ -288,11 +398,14 @@
                     <strong>Score (Rank):</strong>
                     <hr>
                     {{ result['score'] }} ({{ result['rank'] }})<br>
-                    <!-- New "Find Similar Pages" button -->
                     <form method="POST" action="/index.html">
                         <input type="hidden" name="keywords" value="{{ result['page_detail']['keywords'] }}">
                         <button type="submit" style="margin-top: 10px;">Find Similar Pages</button>
                     </form>
+                    <button class="bookmark-btn" data-title="{{ result['page_detail']['title'] }}"
+                        data-url="{{ result['page_detail']['url'] }}" onclick="toggleBookmark(this)">
+                        ★ Bookmark
+                    </button>
                 </div>
                 <div style="flex: 2; padding: 10px;">
                     <strong>Page details:</strong>

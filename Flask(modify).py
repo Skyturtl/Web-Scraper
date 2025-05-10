@@ -274,9 +274,18 @@ def index():
 
 
     if request.method == "POST":
-        query = request.form["query"]
-        apply_correction = request.form.get("apply_correction", "yes")
-        session["apply_correction"] = apply_correction
+        if 'keywords' in request.form:
+            # Extract keywords and convert to space-separated terms
+            keywords_str = request.form['keywords']
+            keyword_entries = [entry.strip() for entry in keywords_str.split(';') if entry.strip()]
+            query = ' '.join([entry.split()[0] for entry in keyword_entries])
+            apply_correction = "no"  # Disable correction for keyword-based search
+        # Handle regular search
+        else:
+            query = request.form.get("query", "")
+            apply_correction = request.form.get("apply_correction", "yes")
+            session["apply_correction"] = apply_correction
+
     else:  # GET request
         query = request.args.get("query", "")
     
@@ -289,10 +298,8 @@ def index():
             query_to_use = query
 
         results = fetch_ranked_results(query_to_use) 
-        if len(results)>=50:
-            results_count="50+"
-        else:
-            results_count = len(results)
+        results_count = "50+" if len(results) >= 50 else len(results)
+        
         end_time = time.time()  # Record end time
         search_time = round(end_time - start_time, 2) 
         

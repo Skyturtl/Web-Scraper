@@ -150,6 +150,13 @@
                 Turn on (Doesn't support "exact phrase")
             </label></li>
     </form>
+    {% if results %}
+    <div>
+        <p style="font-size: 14px; color: #666;">
+            About {{ results_count }} results ({{ search_time }} seconds)
+        </p>
+    </div>
+    {% endif %}
 
     {% if suggestion %}
     <div class="suggestion">
@@ -299,7 +306,7 @@
 
         // Initialize the button text on page load
         updateButton();
-        
+
     </script>
 </body>
 

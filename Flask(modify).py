@@ -267,9 +267,11 @@ def index():
     suggestion = None  # Variable to hold spelling suggestions
     apply_correction = session.get("apply_correction", "yes")  # Default to "yes"
     search_time = None
+    results_count = 0  # Initialize results count
 
     if "query_history" not in session:
         session["query_history"] = []
+
 
     if request.method == "POST":
         query = request.form["query"]
@@ -287,6 +289,10 @@ def index():
             query_to_use = query
 
         results = fetch_ranked_results(query_to_use) 
+        if len(results)>=50:
+            results_count="50+"
+        else:
+            results_count = len(results)
         end_time = time.time()  # Record end time
         search_time = round(end_time - start_time, 2) 
         
@@ -306,6 +312,7 @@ def index():
         suggestion=suggestion,
         apply_correction=apply_correction,
         search_time=search_time,
+        results_count=results_count,
         query_history=session.get("query_history", []),
     )
 

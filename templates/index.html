@@ -150,6 +150,8 @@
                 Turn on (Doesn't support "exact phrase")
             </label></li>
     </form>
+
+
     {% if results %}
     <div>
         <p style="font-size: 14px; color: #444; margin-top: 5px;">
@@ -166,6 +168,69 @@
         Did you mean: <a href="?query={{ suggestion }}">{{ suggestion }}</a>?
     </div>
     {% endif %}
+
+    <div
+        style="position: fixed; bottom: 80px; right: 20px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 1000;">
+        <label for="rankInput" style="display: block; margin-bottom: 5px; color: #333; font-weight: bold;">Jump to
+            Rank:</label>
+        <div style="display: flex; gap: 5px;">
+            <input type="number" id="rankInput" min="1" placeholder="e.g.: 1"
+                style="padding: 5px; font-size: 14px; width: 100px; border: 2px solid #2575fc; border-radius: 4px;">
+            <button id="scrollToRankButton"
+                style="padding: 5px 10px; font-size: 14px; background: #2575fc; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Go
+            </button>
+        </div>
+    </div>
+
+    <style>
+        /* Add highlight animation */
+        .highlight {
+            animation: highlight-fade 2s ease-out;
+            border-left: 4px solid #2575fc !important;
+        }
+
+        @keyframes highlight-fade {
+            0% {
+                background-color: rgba(37, 117, 252, 0.2);
+            }
+
+            100% {
+                background-color: transparent;
+            }
+        }
+    </style>
+
+    <script>
+        scrollToRankButton.addEventListener('click', () => {
+            const rank = rankInput.value;
+            if (!rank || rank < 1) {
+                alert('Please enter a valid rank number!');
+                return;
+            }
+
+            const targetElement = document.getElementById(`rank-${rank}`);
+            if (targetElement) {
+                // Remove previous highlights
+                document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+
+                // Add highlight and scroll
+                targetElement.classList.add('highlight');
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                // Pulse effect on input
+                rankInput.style.borderColor = '#6a11cb';
+                setTimeout(() => {
+                    rankInput.style.borderColor = '#2575fc';
+                }, 500);
+            } else {
+                alert(`Rank ${rank} not found!`);
+            }
+        });
+    </script>
 
     <!-- Query History Section -->
     <div class="query-history">
@@ -219,7 +284,7 @@
 
             <!--<strong>Keyword Appearances:</strong> {{ result['keyword_count'] }}<br>-->
             <div style="display: flex; flex-direction: row;">
-                <div style="flex: 1; padding: 10px; border-right: 1px solid #ccc;">
+                <div id="rank-{{ result['rank'] }}" style="flex: 1; padding: 10px; border-right: 1px solid #ccc;">
                     <strong>Score (Rank):</strong>
                     <hr>
                     {{ result['score'] }} ({{ result['rank'] }})<br>
@@ -263,7 +328,7 @@
             </div>
             {% endfor %}
     </ul>
-    <!-- "Go to Top" and "Go to Bottom" Buttons -->
+
     <!-- Scroll Button -->
     <button class="scroll-button" id="scrollButton" onclick="handleScroll()">Go to Bottom</button>
 

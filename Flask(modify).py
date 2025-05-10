@@ -9,12 +9,16 @@ import time
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for session management
 
+def normalize_text(text):
+    return text.lower() if text else ""
+
 # Helper function to find the longest matching stem in the database
 def find_stem_in_database(term, cursor):
+    term = normalize_text(term)
     while len(term) > 1:  # Stop if the term length is 1 and still no match
         # Query the database for the current term
         cursor.execute("""
-            SELECT COUNT(*) FROM keywords_freq WHERE keyword LIKE  ?
+            SELECT COUNT(*) FROM keywords_freq WHERE LOWER(keyword) LIKE  ?
         """, (term,))   # Use wildcard to match stems
         if cursor.fetchone()[0] > 0:  # If there is at least one match
             return term  # Return the matched stem
@@ -24,12 +28,14 @@ def find_stem_in_database(term, cursor):
 # Spelling correction helper function
 def suggest_correction(query):
     """Suggest spelling corrections for the given query."""
+    query = normalize_text(query)
     blob = TextBlob(query)
     corrected_query = str(blob.correct())  # Automatically correct the query
     return corrected_query if corrected_query.lower() != query.lower() else None
 
 # Helper function to extract phrases and terms
 def extract_phrases_and_terms(query):
+    query = normalize_text(query)
     phrases = re.findall(r'"(.*?)"', query)
     remaining_query = re.sub(r'"(.*?)"', '', query).strip()
     terms = re.findall(r'\b\w+\b', remaining_query)
@@ -98,7 +104,7 @@ def calculate_tfidf(query,title_boost_factor=3):
                 term_positions = {}
                 for t in phrase_terms:
                     cursor.execute(f"""
-                        SELECT parent_group, positions FROM {table} WHERE word = ?
+                        SELECT parent_group, positions FROM {table} WHERE LOWER(word) = ?
                     """, (t,))
                     term_positions[t] = {}
                     for parent_group, positions in cursor.fetchall():
@@ -120,7 +126,7 @@ def calculate_tfidf(query,title_boost_factor=3):
             
             # Get document count containing the term
             cursor.execute("""
-                SELECT parent_group, frequency FROM keywords_freq WHERE keyword = ?
+                SELECT parent_group, frequency FROM keywords_freq WHERE LOWER(keyword) = ?
             """, (matching_stem,))
             
             for parent_group, frequency in cursor.fetchall():
@@ -146,6 +152,7 @@ def calculate_tfidf(query,title_boost_factor=3):
             boost_applied = False
             cursor.execute("""SELECT stem_title FROM links WHERE id = ?""", (parent_group,))
             title = cursor.fetchone()[0] or ""
+            title = normalize_text(title)
             title_terms = title.split()
             is_title_match = all(
                 title_terms[i] == phrase_terms[i]

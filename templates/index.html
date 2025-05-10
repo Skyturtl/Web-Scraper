@@ -65,11 +65,7 @@
     <h1>Search Engine</h1>
     <form method="POST" action="/index.html">
         <input type="text" name="query" placeholder="Enter your query" required>
-        <select name="mode">
-            <option value="mode1" selected>Phrase Search</option>
-        </select>
         <button type="submit">Search</button>
-
         <!-- Radio buttons for spelling correction -->
         <li><b>1. Spelling search check</b>
             <label>
@@ -118,36 +114,38 @@
             <!-- End of Cosine Similarity Details -->
 
             <strong>Keyword Appearances:</strong> {{ result['keyword_count'] }}<br>
-            <strong>Score (Rank):</strong> {{ result['score'] }} ({{ result['rank'] }})<br>
-            <strong>Title:</strong> <a
-                href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['title'] }}</a><br>
-            <strong>URL:</strong> <a
-                href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['url'] }}</a><br>
-            <strong>Last Modified:</strong> {{ result['page_detail']['last_modified'] }}<br>
-            <strong>Size:</strong> {{ result['page_detail']['size'] }} bytes<br>
-            <strong>Keywords:</strong> {{ result['page_detail']['keywords'] }}<br>
-
-            <strong>Parent Links:</strong>
-
-            <ul>
-                {% set parent_links = result['page_detail']['parent_links'] %}
-                {% set displayed_parents = parent_links[:3] %}
-                {% for link in displayed_parents %}
-                <a href="{{ link }}">{{ link }}</a><br>
-                {% endfor %}
-            </ul>
-            (Showing {{ displayed_parents|length }} of {{ parent_links|length }} parent links)<br>
-
-            <strong>Child Links:</strong>
-            <ul>
-                {% set child_links = result['page_detail']['child_links'] %}
-                {% set displayed_children = child_links[:3] %}
-                {% for link in displayed_children %}
-                <a href="{{ link }}">{{ link }}</a><br>
-                {% endfor %}
-            </ul>
-            (Showing {{ displayed_children|length }} of {{ child_links|length }} child links)<br>
-        </li>
+            <div style="display: flex; flex-direction: row;">
+                <div style="flex: 1; padding: 10px; border-right: 1px solid #ccc;">
+                    <strong>Score (Rank):</strong> {{ result['score'] }} ({{ result['rank'] }})<br>
+                </div>
+                <div style="flex: 2; padding: 10px;">
+                    <strong>Title:</strong> <a href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['title'] }}</a><br>
+                    <strong>URL:</strong> <a href="{{ result['page_detail']['url'] }}">{{ result['page_detail']['url'] }}</a><br>
+                    <strong>Last Modified (Size):</strong> {{ result['page_detail']['last_modified'] }}
+                    ({{ result['page_detail']['size'] }} bytes)<br>
+                    <strong>Keywords:</strong> {{ result['page_detail']['keywords'] }}<br>
+            
+                    <strong>Parent Links:</strong>
+                    <ul>
+                        {% set parent_links = result['page_detail']['parent_links'] %}
+                        {% set displayed_parents = parent_links[:3] %}
+                        {% for link in displayed_parents %}
+                        <a href="{{ link }}">{{ link }}</a>
+                        {% endfor %}
+                    </ul>
+                    (Showing {{ displayed_parents|length }} of {{ parent_links|length }} parent links)<br>
+            
+                    <strong>Child Links:</strong>
+                    <ul>
+                        {% set child_links = result['page_detail']['child_links'] %}
+                        {% set displayed_children = child_links[:3] %}
+                        {% for link in displayed_children %}
+                        <a href="{{ link }}">{{ link }}</a>
+                        {% endfor %}
+                    </ul>
+                    (Showing {{ displayed_children|length }} of {{ child_links|length }} child links)<br>
+                </div>
+            </div>
         {% endfor %}
     </ul>
 </body>

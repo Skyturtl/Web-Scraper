@@ -1,5 +1,9 @@
 # Web-Scraper
-For HKUST class COMP4321 GP15 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
+For HKUST class COMP4321 GP15 <br> <strong>By: William Chen, Po Wa Ho</strong>, Fung Ming Sze
+## Overview:
+This project implements a web crawler and search engine for indexing and querying web pages. The system includes a crawler, an inverted index, a TF-IDF-based ranking mechanism, and a Flask-based web interface for user interaction.
+
+
 
 ## Prerequisites:
 - Python 3.x
@@ -16,29 +20,40 @@ For HKUST class COMP4321 GP15 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
 - spider_result.py
 - spider_result.txt
 - Flask.py
-- templates\index.html
+- templates/index.html
+- recheck.py (optional)
 
 ## Design Choices:
 - The database schema and design is explained in the document `COMP4321Report.docx`.
-- The pages are crawled through based on a priority queue/bfs implementation.
-- Symbols were removed after tokenizing the content of the page because it was creating problems with the SQL queries as well as having many symbols to have to sort through, may revisit this problem in the second phase.
-- Numbers were kept as some have a deeper meaning such as year or as a page title.
-- A copy of stemmed page titles are stored in a database for future use if needed.
-  
-- The child list currently is stored as a list of endpoints but simply because I don't have time to rewrite this section, when outputted they are reformatted to include the full url. 
-- Added ve to the stopwords list as you've or other words that end in 've are non-important and additionally ve just means have.
+- Priority-Based Crawling: Uses a priority queue and BFS to determine the order of crawling.
+- Tokenization and Stemming:Removes unnecessary symbols to improve database performance and Retains numbers for meaningful context (e.g., years).
+- Inverted Index:Stores word positions in both body and title for efficient phrase matching.
+- Boosting Mechanisms: Title match boost applied during ranking to prioritize relevant results.
+- Optimized Database Schema: Separate tables for links, keywords, positions, and relationships.
 
 ## How to run:
 To build and execute the web crawler, start by setting up the database. 
 1. Download all the necessary libraries as listed in [Prerequisites](#prerequisites)
    1. Can be done using **`pip install <library_name>`**
-3. Ensure that `scraper.db` and `spider_result.txt` does not exist if you want a fresh run. 
-   1. This is only for clairty purposes, the table is cleared each run and the text file is overwritten
-4. Run the command **`python main.py`** to initialize the database and start the web crawler. 
+   2. **`pip install flask textblob requests beautifulsoup4 nltk sqlite3 aiohttp`**
+2. Ensure **`stopwords.txt`** is in the project directory and delete that **`scraper.db`** and **`spider_result.txt`** if you want a fresh run. 
+3. Run the command **`python main.py`** to initialize the database and start the web crawler. 
    1. This command will create the necessary tables in the SQLite database, begin crawling from the specified seed URL (defined in `main.py`), and store the extracted data, including links, keywords, and parent-child relationships, in `scraper.db`.
 5. Run **`python spider_result.py`**
    1. After we have indexed all the necessary pages and generated a corresponding database, we need to generate the spider result. This command will fetch the indexed data from the database and create a formatted `spider_result.txt` file that contains the pages, keywords, and child links.
-6. Finally, you can view the output. The `scraper.db` file will contain the indexed data, while the `spider_result.txt` file will hold the final results in the required format.
+6.Run **`Flask.py`**
+   1.Start the Flask web server:Open the search engine in your browser at **`http://127.0.0.1:5000/index.html`**.
+
+## Usage:
+1.Search Queries
+2.Search Features
+3.Query History
+4.Bookmarks
 
 ## Specifications:
+Programming Language: Python 3.x
+Framework: Flask
+Database: SQLite
+Libraries: BeautifulSoup, TextBlob, NLTK, aiohttp
+
 May need to use `py -m pip install <library>` and `py <file_name.py>` instead of `python` because of PATH issues. 

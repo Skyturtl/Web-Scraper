@@ -46,6 +46,8 @@ To build and execute the web crawler, start by setting up the database.
   
 5.Run **`Flask.py`**
    1.Start the Flask web server:Open the search engine in your browser at **`http://127.0.0.1:5000/index.html`**.
+## Expected Outputs:
+
 
 ## Usage:
 1.Search Queries

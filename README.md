@@ -1,11 +1,12 @@
 # Web-Scraper
-For HKUST class COMP4321 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
+For HKUST class COMP4321 GP15 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
 
 ## Prerequisites:
 - Python 3.x
-- Required Python libraries(requests, beautifulsoup4, nltk, sqlite3, aiohttp)
+- Required Python libraries(Flask, textblob, requests, beautifulsoup4, nltk, sqlite3, aiohttp)
 - Internet connection (for downloading NLTK tokenizer)
-  
+- Stopwords File
+
 ## Project Structure: 
 - main.py
 - scraper.py
@@ -14,13 +15,16 @@ For HKUST class COMP4321 <br> By: William Chen, Po Wa Ho, Fung Ming Sze
 - scraper.db
 - spider_result.py
 - spider_result.txt
+- Flask.py
+- templates\index.html
 
 ## Design Choices:
-- The database schema and design is explained in the document `Database_design.docx`.
+- The database schema and design is explained in the document `COMP4321Report.docx`.
 - The pages are crawled through based on a priority queue/bfs implementation.
 - Symbols were removed after tokenizing the content of the page because it was creating problems with the SQL queries as well as having many symbols to have to sort through, may revisit this problem in the second phase.
 - Numbers were kept as some have a deeper meaning such as year or as a page title.
 - A copy of stemmed page titles are stored in a database for future use if needed.
+  
 - The child list currently is stored as a list of endpoints but simply because I don't have time to rewrite this section, when outputted they are reformatted to include the full url. 
 - Added ve to the stopwords list as you've or other words that end in 've are non-important and additionally ve just means have.
 

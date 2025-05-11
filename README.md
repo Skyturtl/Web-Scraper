@@ -39,9 +39,12 @@ To build and execute the web crawler, start by setting up the database.
 2. Ensure **`stopwords.txt`** is in the project directory and delete that **`scraper.db`** and **`spider_result.txt`** if you want a fresh run. 
 3. Run the command **`python main.py`** to initialize the database and start the web crawler. 
    1. This command will create the necessary tables in the SQLite database, begin crawling from the specified seed URL (defined in `main.py`), and store the extracted data, including links, keywords, and parent-child relationships, in `scraper.db`.
-5. Run **`python spider_result.py`**
+  
+   
+4. Run **`python spider_result.py`**
    1. After we have indexed all the necessary pages and generated a corresponding database, we need to generate the spider result. This command will fetch the indexed data from the database and create a formatted `spider_result.txt` file that contains the pages, keywords, and child links.
-6.Run **`Flask.py`**
+  
+5.Run **`Flask.py`**
    1.Start the Flask web server:Open the search engine in your browser at **`http://127.0.0.1:5000/index.html`**.
 
 ## Usage:

@@ -54,34 +54,34 @@ To build and execute the web crawler, start by setting up the database.
 
 
 ## Expected Outputs:
-Sample Spider Results (spider_result.txt):
-Page Title: Example Page
-URL: https://example.com/page1
-Last Modified: 2025-05-01, Size: 12345 bytes
-Keywords: example 10; page 8; test 5; ...
-Child Links:
-https://example.com/page2
-https://example.com/page3
---------------------------------------------------
-Sample Search Query:
-Query: test
-Score (Rank): 1.951 (1)
-Page details:
-Title: Test page
-URL: https://www.cse.ust.hk/~kwtleung/COMP4321/testpage.htm
-Last Modified (Size): Tue, 16 May 2023 05:03:16 GMT (603 bytes)
-Keywords: test 3; page 3; crawler 1; get 1; admiss 1
-Parent Links:
-https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm
-https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm
-https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm
-(Showing 3 of 4 parent links)
-Child Links:
-https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm
-https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm
-https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm
-(Showing 3 of 4 child links)
---------------------------------------------------
+Sample Spider Results (spider_result.txt):<br>
+Page Title: Example Page<br>
+URL: https://example.com/page1<br>
+Last Modified: 2025-05-01, Size: 12345 bytes<br>
+Keywords: example 10; page 8; test 5; ...<br>
+Child Links:<br>
+https://example.com/page2<br>
+https://example.com/page3<br>
+
+
+Sample Search Query:<br>
+Query: test<br>
+Score (Rank): 1.951 (1)<br>
+Page details:<br>
+Title: Test page<br>
+URL: https://www.cse.ust.hk/~kwtleung/COMP4321/testpage.htm<br>
+Last Modified (Size): Tue, 16 May 2023 05:03:16 GMT (603 bytes)<br>
+Keywords: test 3; page 3; crawler 1; get 1; admiss 1<br>
+Parent Links:<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm<br>
+(Showing 3 of 4 parent links)<br>
+Child Links:<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm<br>
+(Showing 3 of 4 child links)<br>
 
 ## Usage:
 1.Search Queries

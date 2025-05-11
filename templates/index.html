@@ -423,7 +423,7 @@
                         {% set parent_links = result['page_detail']['parent_links'] %}
                         {% set displayed_parents = parent_links[:3] %}
                         {% for link in displayed_parents %}
-                        <a href="{{ link }}">{{ link }}</a>
+                        <a href="{{ link }}">{{ link }}</a><br>
                         {% endfor %}
                     </ul>
                     (Showing {{ displayed_parents|length }} of {{ parent_links|length }} parent links)<br>
@@ -433,7 +433,7 @@
                         {% set child_links = result['page_detail']['child_links'] %}
                         {% set displayed_children = child_links[:3] %}
                         {% for link in displayed_children %}
-                        <a href="{{ link }}">{{ link }}</a>
+                        <a href="{{ link }}">{{ link }}</a><br>
                         {% endfor %}
                     </ul>
                     (Showing {{ displayed_children|length }} of {{ child_links|length }} child links)<br>

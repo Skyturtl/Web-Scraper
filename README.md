@@ -48,9 +48,9 @@ To build and execute the web crawler, start by setting up the database.
    1.Start the Flask web server:Open the search engine in your browser at **`http://127.0.0.1:5000/index.html`**.
    
 ## Expected Outputs:
-1.Database (scraper.db):Contains indexed data for all crawled pages, including: Metadata (title, URL, size, last modified date). Keywords with frequencies and positions. Parent-child relationships.
-2.Spider Results (spider_result.txt): Lists page details, keywords, and child links for each crawled page.
-3.Search Engine: Displays ranked search results based on TF-IDF and cosine similarity. Shows metadata, keywords, and parent/child links for each result. Allows users to save bookmarks and view query history.
+1.Database (scraper.db):Contains indexed data for all crawled pages, including: Metadata (title, URL, size, last modified date). Keywords with frequencies and positions. Parent-child relationships.<br>
+2.Spider Results (spider_result.txt): Lists page details, keywords, and child links for each crawled page.<br>
+3.Search Engine: Displays ranked search results based on TF-IDF and cosine similarity. Shows metadata, keywords, and parent/child links for each result. Allows users to save bookmarks and view query history.<br>
 
 
 ## Expected Outputs:

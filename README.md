@@ -55,14 +55,15 @@ To build and execute the web crawler, start by setting up the database.
 
 ## Expected Outputs:
 **`Sample Spider Results (spider_result.txt):`**<br>
-Page Title: Example Page<br>
-URL: https://example.com/page1<br>
-Last Modified: 2025-05-01, Size: 12345 bytes<br>
-Keywords: example 10; page 8; test 5; ...<br>
+Page Title: Test page<br>
+URL: https://www.cse.ust.hk/~kwtleung/COMP4321/testpage.htm<br>
+Last Modified: Tue, 16 May 2023 05:03:16 GMT, Size: 603 bytes<br>
+Keywords: test 3; page 3; crawler 1; get 1; admiss 1; cse 1; depart 1; hkust 1; read 1; intern 1; <br>
 Child Links:<br>
-https://example.com/page2<br>
-https://example.com/page3<br>
-
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm<br>
+https://www.cse.ust.hk/~kwtleung/COMP4321/Movie.htm<br>
 
 **`Sample Search Query:`**<br>
 Query: test<br>

@@ -36,8 +36,8 @@ def suggest_correction(query):
 # Helper function to extract phrases and terms
 def extract_phrases_and_terms(query):
     query = normalize_text(query)
-
-    # 提取负关键词（以减号开头的词）
+    
+    # Minus keyword
     negative_terms = re.findall(r'\s-\s*(\w+)', query)
     query = re.sub(r'\s-\s*\w+', '', query)
 

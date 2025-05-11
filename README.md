@@ -54,7 +54,7 @@ To build and execute the web crawler, start by setting up the database.
 
 
 ## Expected Outputs:
-Sample Spider Results (spider_result.txt):<br>
+**`Sample Spider Results (spider_result.txt):`**<br>
 Page Title: Example Page<br>
 URL: https://example.com/page1<br>
 Last Modified: 2025-05-01, Size: 12345 bytes<br>
@@ -64,7 +64,7 @@ https://example.com/page2<br>
 https://example.com/page3<br>
 
 
-Sample Search Query:<br>
+**`Sample Search Query:`**<br>
 Query: test<br>
 Score (Rank): 1.951 (1)<br>
 Page details:<br>

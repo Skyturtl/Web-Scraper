@@ -54,9 +54,9 @@ To build and execute the web crawler, start by setting up the database.
 4.Bookmarks
 
 ## Specifications:
-Programming Language: Python 3.x
-Framework: Flask
-Database: SQLite
-Libraries: BeautifulSoup, TextBlob, NLTK, aiohttp
+Programming Language: Python 3.x<br>
+Framework: Flask<br>
+Database: SQLite<br>
+Libraries: BeautifulSoup, TextBlob, NLTK, aiohttp<br>
 
 May need to use `py -m pip install <library>` and `py <file_name.py>` instead of `python` because of PATH issues. 

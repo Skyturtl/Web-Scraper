@@ -53,7 +53,7 @@ To build and execute the web crawler, start by setting up the database.
 3.Search Engine: Displays ranked search results based on TF-IDF and cosine similarity. Shows metadata, keywords, and parent/child links for each result. Allows users to save bookmarks and view query history.<br>
 
 
-## Expected Outputs:
+## Example Outputs:
 **`Sample Spider Results (spider_result.txt):`**<br>
 Page Title: Test page<br>
 URL: https://www.cse.ust.hk/~kwtleung/COMP4321/testpage.htm<br>

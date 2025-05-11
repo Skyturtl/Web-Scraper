@@ -46,8 +46,42 @@ To build and execute the web crawler, start by setting up the database.
   
 5.Run **`Flask.py`**
    1.Start the Flask web server:Open the search engine in your browser at **`http://127.0.0.1:5000/index.html`**.
+   
 ## Expected Outputs:
+1.Database (scraper.db):Contains indexed data for all crawled pages, including: Metadata (title, URL, size, last modified date). Keywords with frequencies and positions. Parent-child relationships.
+2.Spider Results (spider_result.txt): Lists page details, keywords, and child links for each crawled page.
+3.Search Engine: Displays ranked search results based on TF-IDF and cosine similarity. Shows metadata, keywords, and parent/child links for each result. Allows users to save bookmarks and view query history.
 
+
+## Expected Outputs:
+Sample Spider Results (spider_result.txt):
+Page Title: Example Page
+URL: https://example.com/page1
+Last Modified: 2025-05-01, Size: 12345 bytes
+Keywords: example 10; page 8; test 5; ...
+Child Links:
+https://example.com/page2
+https://example.com/page3
+--------------------------------------------------
+Sample Search Query:
+Query: test
+Score (Rank): 1.951 (1)
+Page details:
+Title: Test page
+URL: https://www.cse.ust.hk/~kwtleung/COMP4321/testpage.htm
+Last Modified (Size): Tue, 16 May 2023 05:03:16 GMT (603 bytes)
+Keywords: test 3; page 3; crawler 1; get 1; admiss 1
+Parent Links:
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm
+https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm
+https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm
+(Showing 3 of 4 parent links)
+Child Links:
+https://www.cse.ust.hk/~kwtleung/COMP4321/ust_cse.htm
+https://www.cse.ust.hk/~kwtleung/COMP4321/news.htm
+https://www.cse.ust.hk/~kwtleung/COMP4321/books.htm
+(Showing 3 of 4 child links)
+--------------------------------------------------
 
 ## Usage:
 1.Search Queries
